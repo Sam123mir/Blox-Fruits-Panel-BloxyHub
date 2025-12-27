@@ -76,6 +76,8 @@ if getgenv().BloxyHub.Active then
     task.wait(1)
 end
 
+UpdateLoading("Servicios...")
+
 -- ═══════════════════════════════════════════════════════════════
 -- MÓDULO: THREAD MANAGER (Gestión de Ciclo de Vida)
 -- ═══════════════════════════════════════════════════════════════
@@ -168,13 +170,12 @@ local function UpdateCharacterReferences(newChar)
     end
 end
 
+UpdateLoading("Personaje...")
 task.spawn(function()
-    print("[BLOXY HUB] Esperando personaje...")
     if not Character then 
         Character = LocalPlayer.CharacterAdded:Wait()
     end
     UpdateCharacterReferences(Character)
-    print("[BLOXY HUB] Personaje detectado y variables listas.")
 end)
 
 LocalPlayer.CharacterAdded:Connect(UpdateCharacterReferences)
@@ -183,6 +184,7 @@ LocalPlayer.CharacterAdded:Connect(UpdateCharacterReferences)
 -- MÓDULO: CONFIGURACIÓN ELITE
 -- ═══════════════════════════════════════════════════════════════
 
+UpdateLoading("Configuración...")
 local Config = {
     -- Auto Farming
     AutoFarm = {
@@ -285,11 +287,12 @@ local Config = {
 -- MÓDULO: SESIÓN Y ESTADÍSTICAS
 -- ═══════════════════════════════════════════════════════════════
 
+UpdateLoading("Módulos...")
 local Session = {
     StartTime = os.time(),
-    StartLevel = LocalPlayer.Data.Level.Value,
-    StartBeli = LocalPlayer.Data.Beli.Value,
-    StartFragments = LocalPlayer.Data.Fragments.Value,
+    StartLevel = 0,
+    StartBeli = 0,
+    StartFragments = 0,
     
     LevelsGained = 0,
     BeliEarned = 0,
@@ -300,8 +303,19 @@ local Session = {
     Uptime = "00:00:00",
     Ping = 0,
     FPS = 60,
-    Status = "Inicializando..."
+    Status = "Esperando Datos..."
 }
+
+-- Inicialización segura de estadísticas (Móvil)
+task.spawn(function()
+    local data = LocalPlayer:WaitForChild("Data", 20)
+    if data then
+        Session.StartLevel = data:WaitForChild("Level", 10).Value
+        Session.StartBeli = data:WaitForChild("Beli", 10).Value
+        Session.StartFragments = data:WaitForChild("Fragments", 10).Value
+        Session.Status = "Sesión Iniciada"
+    end
+end)
 
 function Session:Update()
     pcall(function()
