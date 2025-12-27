@@ -100,9 +100,28 @@ local Services = {
 }
 
 local LocalPlayer = Services.Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Character = LocalPlayer.Character
+local Humanoid = Character and Character:FindFirstChild("Humanoid")
+local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+
+-- Función para asegurar que las referencias del personaje estén actualizadas
+local function UpdateCharacterReferences(newChar)
+    Character = newChar or LocalPlayer.Character
+    if Character then
+        Humanoid = Character:WaitForChild("Humanoid", 10)
+        HumanoidRootPart = Character:WaitForChild("HumanoidRootPart", 10)
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(UpdateCharacterReferences)
+if not Character then 
+    task.spawn(function()
+        Character = LocalPlayer.CharacterAdded:Wait()
+        UpdateCharacterReferences(Character)
+    end)
+else
+    UpdateCharacterReferences(Character)
+end
 
 -- ═══════════════════════════════════════════════════════════════
 -- MÓDULO: CONFIGURACIÓN ELITE
@@ -162,6 +181,14 @@ local Config = {
         AdminDetector = false,
         AutoLeaveOnAdmin = true,
         StaffGroupId = 2440505
+    },
+    
+    -- Player Settings
+    Player = {
+        AutoAura = false,
+        InfiniteSkyjump = false,
+        WalkSpeed = 16,
+        JumpPower = 50
     },
     
     -- UI Settings
@@ -552,6 +579,38 @@ function Security:DetectAdmin()
     return false
 end
 
+-- // MÓDULO: MEJORAS DEL JUGADOR
+local PlayerExp = {}
+
+function PlayerExp:AutoAura()
+    if not Config.Player.AutoAura then return end
+    
+    pcall(function()
+        local hasAura = false
+        if Character and Character:FindFirstChild("HasBuso") then
+            -- En algunas versiones de Blox Fruits hay un tag
+            hasAura = true
+        end
+        
+        -- Si no tiene el efecto visual o queremos asegurar, disparamos el remote
+        -- El remote usualmente alterna el estado
+        if not Character:FindFirstChild("IronBody") then -- IronBody es el nombre del efecto de Aura
+            Services.ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
+        end
+    end)
+end
+
+function PlayerExp:InfiniteSkyjump()
+    if not Config.Player.InfiniteSkyjump then return end
+    
+    -- Escuchar saltos
+    Services.UserInputService.JumpRequest:Connect(function()
+        if Config.Player.InfiniteSkyjump and Humanoid then
+            Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+end
+
 -- ═══════════════════════════════════════════════════════════════
 -- MÓDULO: UI RAYFIELD (Interfaz Profesional)
 -- ═══════════════════════════════════════════════════════════════
@@ -583,6 +642,7 @@ local Tabs = {
     Dashboard = Window:CreateTab("📊 Dashboard", 4483362458),
     Farming = Window:CreateTab("⚔️ Farming", 4483362458),
     Combat = Window:CreateTab("💥 Combate", 4483362458),
+    Player = Window:CreateTab("🏃 Personaje", 4483362458),
     Stats = Window:CreateTab("📈 Stats", 4483362458),
     Performance = Window:CreateTab("⚡ Performance", 4483362458),
     Security = Window:CreateTab("🛡️ Seguridad", 4483362458),
@@ -715,6 +775,58 @@ Tabs.Combat:CreateSlider({
 })
 
 -- ═══════════════════════════════════════════════════════════════
+-- TAB: PERSONAJE
+-- ═══════════════════════════════════════════════════════════════
+
+Tabs.Player:CreateSection("Mejoras de Combate y Movilidad")
+
+Tabs.Player:CreateToggle({
+    Name = "✨ Auto Aura (Haki)",
+    CurrentValue = Config.Player.AutoAura,
+    Flag = "AutoAura",
+    Callback = function(value)
+        Config.Player.AutoAura = value
+        if value then PlayerExp:AutoAura() end
+    end
+})
+
+Tabs.Player:CreateToggle({
+    Name = "🕊️ Salto Infinito (Skyjump)",
+    CurrentValue = Config.Player.InfiniteSkyjump,
+    Flag = "InfiniteSkyjump",
+    Callback = function(value)
+        Config.Player.InfiniteSkyjump = value
+        if value then PlayerExp:InfiniteSkyjump() end
+    end
+})
+
+Tabs.Player:CreateSection("Velocidad y Salto")
+
+Tabs.Player:CreateSlider({
+    Name = "Velocidad de Caminado",
+    Range = {16, 200},
+    Increment = 1,
+    CurrentValue = Config.Player.WalkSpeed,
+    Flag = "WalkSpeed",
+    Callback = function(value)
+        Config.Player.WalkSpeed = value
+        if Humanoid then Humanoid.WalkSpeed = value end
+    end
+})
+
+Tabs.Player:CreateSlider({
+    Name = "Poder de Salto",
+    Range = {50, 300},
+    Increment = 1,
+    CurrentValue = Config.Player.JumpPower,
+    Flag = "JumpPower",
+    Callback = function(value)
+        Config.Player.JumpPower = value
+        if Humanoid then Humanoid.JumpPower = value end
+    end
+})
+
+-- ═══════════════════════════════════════════════════════════════
 -- TAB: STATS
 -- ═══════════════════════════════════════════════════════════════
 
@@ -840,6 +952,7 @@ Tabs.Security:CreateToggle({
     Flag = "AutoLeave",
     Callback = function(value)
         Config.Security.AutoLeaveOnAdmin = value
+    end
 })
 
 -- ═══════════════════════════════════════════════════════════════
@@ -949,6 +1062,14 @@ ThreadManager:Register("SecurityManager", function()
     Security:AntiAFK()
     if Config.Security.AdminDetector then
         Security:DetectAdmin()
+    end
+    -- Mantenimiento del jugador
+    if Config.Player.AutoAura then
+        PlayerExp:AutoAura()
+    end
+    if Humanoid then
+        if Humanoid.WalkSpeed ~= Config.Player.WalkSpeed then Humanoid.WalkSpeed = Config.Player.WalkSpeed end
+        if Humanoid.JumpPower ~= Config.Player.JumpPower then Humanoid.JumpPower = Config.Player.JumpPower end
     end
     task.wait(2)
 end)
