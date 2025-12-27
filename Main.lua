@@ -1,6 +1,6 @@
 --[[
     ╔══════════════════════════════════════════════════════════════╗
-    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.0               ║
+    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.1               ║
     ║  Arquitectura Modular Profesional | Diseñado por Sammir    ║
     ╚══════════════════════════════════════════════════════════════╝
 --]]
@@ -14,8 +14,51 @@ local VERSION = "6.0.0"
 -- Reemplaza este link con tu link RAW de GitHub (donde esté tu versión escrita)
 local GITHUB_RAW = "https://raw.githubusercontent.com/Sam123mir/BloxyHub/refs/heads/main/version.txt"
 
-print("[BLOXY HUB] Iniciando carga de Blox Fruits Panel...")
-print("[BLOXY HUB] Servicios cargados. Seteando variables locales...")
+-- ═══════════════════════════════════════════════════════════════
+-- FEEDBACK INICIAL (MÓVIL / PC)
+-- ═══════════════════════════════════════════════════════════════
+
+print("[BLOXY HUB] Iniciando sistema...")
+
+local function CreateLoadingVisual()
+    local player = game:GetService("Players").LocalPlayer
+    local gui = player:FindFirstChild("PlayerGui"):FindFirstChild("BloxyLoading")
+    if gui then gui:Destroy() end
+    
+    gui = Instance.new("ScreenGui")
+    gui.Name = "BloxyLoading"
+    gui.ResetOnSpawn = false
+    gui.Parent = player:WaitForChild("PlayerGui")
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 250, 0, 80)
+    frame.Position = UDim2.new(0.5, -125, 0, 50)
+    frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = gui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = frame
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 150, 255)
+    stroke.Thickness = 2
+    stroke.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "BLOXY HUB\nCargando Panel..."
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 18
+    label.Font = Enum.Font.GothamBold
+    label.Parent = frame
+    
+    return gui
+end
+
+local LoadingGui = pcall(CreateLoadingVisual)
 
 if getgenv().BloxyHub.Active then
     warn("[BLOXY HUB] Ya hay una instancia activa. Cerrando instancia anterior...")
@@ -106,8 +149,7 @@ local Services = {
 
 local LocalPlayer = Services.Players.LocalPlayer
 local Character = LocalPlayer.Character
-local Humanoid = Character and Character:FindFirstChild("Humanoid")
-local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+local Humanoid, HumanoidRootPart
 
 -- Función para asegurar que las referencias del personaje estén actualizadas
 local function UpdateCharacterReferences(newChar)
@@ -118,15 +160,16 @@ local function UpdateCharacterReferences(newChar)
     end
 end
 
-LocalPlayer.CharacterAdded:Connect(UpdateCharacterReferences)
-if not Character then 
-    task.spawn(function()
+task.spawn(function()
+    print("[BLOXY HUB] Esperando personaje...")
+    if not Character then 
         Character = LocalPlayer.CharacterAdded:Wait()
-        UpdateCharacterReferences(Character)
-    end)
-else
+    end
     UpdateCharacterReferences(Character)
-end
+    print("[BLOXY HUB] Personaje detectado y variables listas.")
+end)
+
+LocalPlayer.CharacterAdded:Connect(UpdateCharacterReferences)
 
 -- ═══════════════════════════════════════════════════════════════
 -- MÓDULO: CONFIGURACIÓN ELITE
@@ -261,19 +304,18 @@ function Session:Update()
         
         self.Uptime = string.format("%02d:%02d:%02d", hours, mins, secs)
         
-        -- Verificación segura de datos (pueden ser nil al cargar)
         if LocalPlayer:FindFirstChild("Data") then
             if LocalPlayer.Data:FindFirstChild("Level") then self.LevelsGained = LocalPlayer.Data.Level.Value - self.StartLevel end
             if LocalPlayer.Data:FindFirstChild("Beli") then self.BeliEarned = LocalPlayer.Data.Beli.Value - self.StartBeli end
             if LocalPlayer.Data:FindFirstChild("Fragments") then self.FragmentsEarned = LocalPlayer.Data.Fragments.Value - self.StartFragments end
         end
         
-        -- Ping y FPS con manejo de errores
-        local pingItem = Services.Stats.Network.ServerStatsItem:FindFirstChild("Data Ping")
-        if pingItem then self.Ping = math.floor(pingItem:GetValue()) end
+        -- Ping y FPS ultra-seguros
+        local successPing, pingVal = pcall(function() return Services.Stats.Network.ServerStatsItem:FindFirstChild("Data Ping"):GetValue() end)
+        if successPing then self.Ping = math.floor(pingVal) end
         
-        local fpsItem = Services.Stats.FrameRateManager:FindFirstChild("RenderAverage")
-        if fpsItem then self.FPS = math.floor(fpsItem:GetValue()) end
+        local successFPS, fpsVal = pcall(function() return Services.Stats.FrameRateManager:FindFirstChild("RenderAverage"):GetValue() end)
+        if successFPS then self.FPS = math.floor(fpsVal) end
     end)
 end
 
@@ -872,23 +914,34 @@ end)
 if s and e then
     Fluent = e
     getgenv().Fluent = Fluent
+    print("[BLOXY HUB] Librería Fluent cargada exitosamente.")
 else
     warn("[BLOXY HUB] Error cargando Fluent: " .. tostring(e))
-    return
+    -- Si falla, intentamos link alternativo
+    local s2, e2 = pcall(function()
+        return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+    end)
+    if s2 and e2 then
+        Fluent = e2
+        getgenv().Fluent = Fluent
+    else
+        return
+    end
 end
 
 local SaveManager, InterfaceManager
 pcall(function()
+    print("[BLOXY HUB] Descargando complementos de interfaz...")
     SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
     InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 end)
 
 local Window = Fluent:CreateWindow({
-    Title = "Blox Fruits Panel 🏴‍☠️ | Bloxy Hub Titanium",
-    SubTitle = "v7.0 by Sammir",
+    Title = "Blox Fruits Panel 🏴‍☠️ | Bloxy Hub",
+    SubTitle = "Titanium v7.1 by Sammir",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = true, -- El efecto de desenfoque (vidrio)
+    Acrylic = not Services.UserInputService.TouchEnabled, -- Desactivar acrílico en móvil para evitar crash
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl
 })
@@ -1478,13 +1531,29 @@ local function CreateFloatingButton()
     
     Button.MouseButton1Click:Connect(function()
         if Window then
-            Window:Minimize() -- Alterna visibilidad de Fluent
+            Window:Minimize() 
+        end
+    end)
+    
+    -- Eliminar Loading Screen visual
+    pcall(function()
+        if LocalPlayer.PlayerGui:FindFirstChild("BloxyLoading") then
+            LocalPlayer.PlayerGui.BloxyLoading:Destroy()
         end
     end)
 end
 
 if Services.UserInputService.TouchEnabled then
-    CreateFloatingButton()
+    pcall(CreateFloatingButton)
+else
+    -- Si es PC, también eliminamos el loading al terminar de cargar
+    pcall(function()
+        task.delay(1, function()
+            if LocalPlayer.PlayerGui:FindFirstChild("BloxyLoading") then
+                LocalPlayer.PlayerGui.BloxyLoading:Destroy()
+            end
+        end)
+    end)
 end
 
 getgenv().BloxyHub.Active = true
