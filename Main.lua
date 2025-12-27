@@ -53,7 +53,7 @@ local Window = Rayfield:CreateWindow({
         FolderName = "BloxyHub_V5",
         FileName = "Elite_Config"
     },
-    ImageId = 4483362458 -- Placeholder Logo (Actualizable por Sammir)
+    ImageId = 88067710662291 -- Placeholder Logo (Actualizable por Sammir)
 })
 
 -- // PESTAÑAS (CATEGORÍAS ELITE)
