@@ -475,6 +475,18 @@ local I18n = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
+-- MÓDULO: UTILIDADES Y HELPERS (Declaración Forward)
+-- ═══════════════════════════════════════════════════════════════
+
+local Utils = {}
+
+function Utils:Translate(key)
+    local lang = (Config and Config.UI and Config.UI.Language) or "Spanish"
+    local dict = I18n.Dictionary[lang] or I18n.Dictionary["Spanish"]
+    return dict[key] or key
+end
+
+-- ═══════════════════════════════════════════════════════════════
 -- MÓDULO: SESIÓN Y ESTADÍSTICAS
 -- ═══════════════════════════════════════════════════════════════
 
@@ -495,7 +507,7 @@ local Session = {
     Uptime = "00:00:00",
     Ping = 0,
     FPS = 60,
-    Status = Utils:Translate("WaitingData")
+    Status = "Esperando Datos..."
 }
 
 -- Inicialización segura de estadísticas (Móvil)
@@ -583,10 +595,10 @@ end)
 -- Redundancia eliminada
 
 -- ═══════════════════════════════════════════════════════════════
--- MÓDULO: UTILIDADES Y HELPERS
+-- MÓDULO: UTILIDADES Y HELPERS (Extendido)
 -- ═══════════════════════════════════════════════════════════════
 
-local Utils = {}
+-- Utils ya fue declarado arriba, ahora extendemos con más funciones
 
 -- ✅ CACHÉ ESPACIAL (Optimización de CPU)
 local EnemyCache = {
@@ -749,11 +761,7 @@ function Utils:Notify(title, message, duration)
     end
 end
 
-function Utils:Translate(key)
-    local lang = Config.UI.Language or "Spanish"
-    local dict = I18n.Dictionary[lang] or I18n.Dictionary["Spanish"]
-    return dict[key] or key
-end
+-- Utils:Translate ya está definida en la declaración forward del módulo
 
 -- // MÓDULO: INTELIGENCIA ARTIFICIAL (COMBATE PRO)
 local AI = {
