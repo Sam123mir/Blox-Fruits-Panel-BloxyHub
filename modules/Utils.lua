@@ -1,11 +1,11 @@
 --[[
     BLOXY HUB TITANIUM - MÓDULO: UTILS
-    Funciones de utilidad general - CORREGIDO
+    Utilidades generales - VERSIÓN ROBUSTA
 ]]
 
 local Utils = {}
 
--- Dependencias (se inyectan desde el loader)
+-- Dependencias
 local Services, Config, I18n
 
 function Utils:Init(deps)
@@ -15,71 +15,77 @@ function Utils:Init(deps)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- CACHÉ ESPACIAL (Optimización de CPU)
+-- CACHÉ DE ENEMIGOS
 -- ═══════════════════════════════════════════════════════════════
 
 local EnemyCache = {
     LastUpdate = 0,
-    CacheTime = 0.5,
+    CacheTime = 0.3,
     Enemies = {}
 }
 
+-- ═══════════════════════════════════════════════════════════════
+-- FUNCIONES DE PERSONAJE
+-- ═══════════════════════════════════════════════════════════════
+
 function Utils:GetCharacter()
-    local char = Services.LocalPlayer.Character
-    if not char then
-        char = Services.LocalPlayer.CharacterAdded:Wait()
-    end
-    return char
+    local plr = Services.LocalPlayer
+    return plr.Character or plr.CharacterAdded:Wait()
 end
 
 function Utils:GetHumanoid()
     local char = self:GetCharacter()
-    if char then
-        return char:FindFirstChildOfClass("Humanoid")
-    end
-    return nil
+    return char and char:FindFirstChildOfClass("Humanoid")
 end
 
 function Utils:GetRootPart()
     local char = self:GetCharacter()
-    if char then
-        return char:FindFirstChild("HumanoidRootPart")
+    return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- BÚSQUEDA DE ENEMIGOS (ROBUSTA)
+-- ═══════════════════════════════════════════════════════════════
+
+function Utils:RefreshEnemyCache()
+    EnemyCache.Enemies = {}
+    
+    local folder = Services.Workspace:FindFirstChild("Enemies")
+    if not folder then return end
+    
+    for _, enemy in pairs(folder:GetChildren()) do
+        local hum = enemy:FindFirstChild("Humanoid")
+        local hrp = enemy:FindFirstChild("HumanoidRootPart")
+        
+        if hum and hrp and hum.Health > 0 then
+            table.insert(EnemyCache.Enemies, enemy)
+        end
     end
-    return nil
+    
+    EnemyCache.LastUpdate = tick()
 end
 
 function Utils:GetClosestEnemy(maxDistance)
     maxDistance = maxDistance or 500
+    
     local rootPart = self:GetRootPart()
     if not rootPart then return nil, math.huge end
     
-    local currentTime = tick()
-    
-    -- Actualizar caché si expiró
-    if currentTime - EnemyCache.LastUpdate > EnemyCache.CacheTime then
-        EnemyCache.Enemies = {}
-        
-        local folder = Services.Workspace:FindFirstChild("Enemies")
-        if folder then
-            for _, enemy in pairs(folder:GetChildren()) do
-                if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
-                    if enemy.Humanoid.Health > 0 then
-                        table.insert(EnemyCache.Enemies, enemy)
-                    end
-                end
-            end
-        end
-        EnemyCache.LastUpdate = currentTime
+    -- Actualizar caché si es necesario
+    if tick() - EnemyCache.LastUpdate > EnemyCache.CacheTime then
+        self:RefreshEnemyCache()
     end
     
-    -- Buscar el más cercano
     local closest = nil
     local closestDist = maxDistance
     
     for _, enemy in pairs(EnemyCache.Enemies) do
-        if enemy and enemy.Parent and enemy:FindFirstChild("HumanoidRootPart") then
-            if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-                local dist = (rootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+        if enemy and enemy.Parent then
+            local hrp = enemy:FindFirstChild("HumanoidRootPart")
+            local hum = enemy:FindFirstChild("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                local dist = (rootPart.Position - hrp.Position).Magnitude
                 if dist < closestDist then
                     closest = enemy
                     closestDist = dist
@@ -95,67 +101,78 @@ function Utils:GetEnemiesInRange(range)
     local rootPart = self:GetRootPart()
     if not rootPart then return {} end
     
+    -- Actualizar caché
+    if tick() - EnemyCache.LastUpdate > EnemyCache.CacheTime then
+        self:RefreshEnemyCache()
+    end
+    
     local inRange = {}
-    self:GetClosestEnemy(range) -- Actualiza caché
     
     for _, enemy in pairs(EnemyCache.Enemies) do
-        if enemy and enemy.Parent and enemy:FindFirstChild("HumanoidRootPart") then
-            if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-                local dist = (rootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+        if enemy and enemy.Parent then
+            local hrp = enemy:FindFirstChild("HumanoidRootPart")
+            local hum = enemy:FindFirstChild("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                local dist = (rootPart.Position - hrp.Position).Magnitude
                 if dist <= range then
                     table.insert(inRange, enemy)
                 end
             end
         end
     end
+    
     return inRange
 end
 
 function Utils:GetEnemyByName(name)
-    local enemies = Services.Workspace:FindFirstChild("Enemies")
-    if not enemies then return nil end
+    local folder = Services.Workspace:FindFirstChild("Enemies")
+    if not folder then return nil end
     
-    for _, enemy in pairs(enemies:GetChildren()) do
+    for _, enemy in pairs(folder:GetChildren()) do
         if enemy.Name == name then
-            if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+            local hum = enemy:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
                 return enemy
             end
         end
     end
+    
     return nil
 end
 
--- TELEPORT MEJORADO - Con loop para mantener posición
+-- ═══════════════════════════════════════════════════════════════
+-- TELEPORT ROBUSTO
+-- ═══════════════════════════════════════════════════════════════
+
 function Utils:TeleportTo(cframe, safeMode)
     local rootPart = self:GetRootPart()
     if not rootPart then return false end
     
     local targetCFrame = cframe
     if safeMode then
-        targetCFrame = cframe * CFrame.new(0, Config.AutoFarm.Distance or 15, 0)
+        targetCFrame = cframe * CFrame.new(0, 15, 0)
     end
     
-    -- Teletransportar múltiples veces para evitar que el juego te regrese
-    for i = 1, 5 do
-        pcall(function()
+    -- Teleport múltiple para evitar que el servidor te regrese
+    local success = pcall(function()
+        for i = 1, 5 do
             rootPart.CFrame = targetCFrame
-            
-            -- También mover la velocidad a 0 para evitar deslizamiento
-            local humanoid = self:GetHumanoid()
-            if humanoid then
-                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+            -- Cancelar velocidad para evitar deslizamiento
+            rootPart.Velocity = Vector3.new(0, 0, 0)
+            if rootPart:FindFirstChild("BodyVelocity") then
+                rootPart.BodyVelocity:Destroy()
             end
-        end)
-        task.wait(0.05)
-    end
+            task.wait()
+        end
+    end)
     
-    return true
+    return success
 end
 
--- Teleport continuo (para farming)
 function Utils:TeleportToLoop(cframe, duration)
-    duration = duration or 0.5
     local startTime = tick()
+    duration = duration or 0.5
     
     while tick() - startTime < duration do
         self:TeleportTo(cframe, false)
@@ -163,44 +180,55 @@ function Utils:TeleportToLoop(cframe, duration)
     end
 end
 
+-- ═══════════════════════════════════════════════════════════════
+-- EQUIPAR ARMA (ROBUSTO)
+-- ═══════════════════════════════════════════════════════════════
+
 function Utils:Equip(toolName)
-    local char = self:GetCharacter()
     local humanoid = self:GetHumanoid()
-    if not humanoid then return end
+    local char = self:GetCharacter()
+    if not humanoid or not char then return end
+    
+    -- Si ya tiene el arma equipada, no hacer nada
+    local currentTool = char:FindFirstChildOfClass("Tool")
+    if currentTool and string.find(currentTool.Name:lower(), toolName:lower()) then
+        return
+    end
     
     pcall(function()
+        local backpack = Services.LocalPlayer:FindFirstChild("Backpack")
+        if not backpack then return end
+        
         if toolName == "Melee" or toolName == "Combat" then
-            -- Buscar herramienta de melee
-            for _, tool in pairs(Services.LocalPlayer.Backpack:GetChildren()) do
+            -- Buscar herramienta de combate cuerpo a cuerpo
+            for _, tool in pairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
-                    if tool.ToolTip == "Melee" or tool.Name == "Combat" or 
-                       string.find(tool.Name:lower(), "combat") or
-                       string.find(tool.Name:lower(), "melee") then
+                    local tt = tool.ToolTip:lower()
+                    local nm = tool.Name:lower()
+                    
+                    if tt == "melee" or nm == "combat" or 
+                       string.find(nm, "fist") or string.find(nm, "combat") or
+                       string.find(nm, "hand") then
                         humanoid:EquipTool(tool)
-                        print("[UTILS] Equipado: " .. tool.Name)
                         return
                     end
                 end
             end
             
-            -- Si no encuentra, equipar la primera herramienta
-            local firstTool = Services.LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
-            if firstTool then
-                humanoid:EquipTool(firstTool)
-                print("[UTILS] Equipado (fallback): " .. firstTool.Name)
+            -- Fallback: equipar la primera herramienta
+            local first = backpack:FindFirstChildOfClass("Tool")
+            if first then
+                humanoid:EquipTool(first)
             end
         else
-            -- Buscar por nombre exacto
-            local tool = Services.LocalPlayer.Backpack:FindFirstChild(toolName)
+            -- Buscar por nombre exacto o parcial
+            local tool = backpack:FindFirstChild(toolName)
             if tool then
                 humanoid:EquipTool(tool)
-                print("[UTILS] Equipado: " .. toolName)
             else
-                -- Buscar por nombre parcial
-                for _, t in pairs(Services.LocalPlayer.Backpack:GetChildren()) do
+                for _, t in pairs(backpack:GetChildren()) do
                     if t:IsA("Tool") and string.find(t.Name:lower(), toolName:lower()) then
                         humanoid:EquipTool(t)
-                        print("[UTILS] Equipado (parcial): " .. t.Name)
                         return
                     end
                 end
@@ -208,6 +236,10 @@ function Utils:Equip(toolName)
         end
     end)
 end
+
+-- ═══════════════════════════════════════════════════════════════
+-- UTILIDADES GENERALES
+-- ═══════════════════════════════════════════════════════════════
 
 function Utils:GetCurrentWorld()
     local placeId = game.PlaceId
@@ -219,8 +251,7 @@ end
 
 function Utils:IsLagging()
     local success, ping = pcall(function()
-        local stats = game:GetService("Stats")
-        return stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+        return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
     end)
     return success and ping > 500
 end
@@ -231,7 +262,7 @@ function Utils:Translate(key)
     return dict[key] or key
 end
 
--- WindUI es inyectado externamente
+-- WindUI
 local WindUI = nil
 
 function Utils:SetWindUI(ui)
@@ -249,20 +280,18 @@ function Utils:Notify(title, message, duration)
             Icon = "bell"
         })
     end
-    print(string.format("[NOTIFY] %s: %s", title, message))
+    print(string.format("[BLOXY HUB] %s: %s", title, message))
 end
 
--- Función para obtener info del jugador (para footer)
+-- Obtener info del jugador para el footer
 function Utils:GetPlayerInfo()
     local player = Services.LocalPlayer
     return {
         Name = player.DisplayName,
-        Username = "@" .. player.Name,
+        Username = player.Name,
         UserId = player.UserId,
-        Thumbnail = string.format(
-            "https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=150&height=150&format=png",
-            player.UserId
-        )
+        -- Thumbnail usando el servicio de Roblox correcto
+        ThumbnailId = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150"
     }
 end
 

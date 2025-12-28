@@ -1,6 +1,6 @@
 --[[
     BLOXY HUB TITANIUM - UI: TAB DASHBOARD
-    Panel principal con estadísticas - CORREGIDO + FOOTER PERFIL
+    Panel principal - VERSIÓN ROBUSTA CON PERFIL
 ]]
 
 local DashboardTab = {}
@@ -8,7 +8,6 @@ local DashboardTab = {}
 function DashboardTab:Create(Window, deps)
     local Utils = deps.Utils
     local Session = deps.Session
-    local ThreadManager = deps.ThreadManager
     local Colors = deps.Colors
     local Services = deps.Services
     
@@ -20,7 +19,7 @@ function DashboardTab:Create(Window, deps)
         Border = true
     })
     
-    -- Sección de bienvenida
+    -- Bienvenida
     Tab:Section({
         Title = Utils:Translate("BIENVENIDO"),
         TextSize = 20,
@@ -35,7 +34,7 @@ function DashboardTab:Create(Window, deps)
     
     Tab:Space({ Columns = 2 })
     
-    -- Estado del Script
+    -- Estado del Script (Info dinámica)
     local StatusSection = Tab:Section({
         Title = Utils:Translate("EstadoScript"),
         Box = true,
@@ -44,13 +43,17 @@ function DashboardTab:Create(Window, deps)
     })
     
     StatusSection:Section({
-        Title = Session.Status or "Iniciando...",
-        TextSize = 16
+        Title = "Estado: " .. (Session.Status or "Iniciando..."),
+        TextSize = 14
     })
     
+    -- Info con hora de Lima
+    local limaTime = Session:GetLimaTime() or "00:00:00"
     StatusSection:Section({
-        Title = string.format("FPS: %d | Ping: %dms | Uptime: %s", 
-            Session.FPS or 60, Session.Ping or 0, Session.Uptime or "00:00:00"),
+        Title = string.format("FPS: %d | Ping: %dms | Hora Lima: %s", 
+            Session.FPS or 60, 
+            Session.Ping or 0, 
+            limaTime),
         TextSize = 12,
         TextTransparency = 0.4
     })
@@ -65,26 +68,41 @@ function DashboardTab:Create(Window, deps)
         Opened = true
     })
     
-    -- Mostrar nivel actual
     local currentLevel = Session:GetPlayerLevel() or 0
     local currentBeli = Session:GetPlayerBeli() or 0
+    local currentFrags = Session:GetPlayerFragments() or 0
+    local world, _ = Utils:GetCurrentWorld()
+    
+    -- Mostrar fragmentos según el sea
+    local fragText = ""
+    if world == 1 then
+        fragText = "Fragmentos: Disponible en Sea 2+"
+    else
+        fragText = "Fragmentos: " .. currentFrags
+    end
     
     StatsSection:Section({
-        Title = string.format(
-            "Nivel Actual: %d | Beli: %d",
-            currentLevel, currentBeli
-        ),
+        Title = string.format("Nivel: %d | Beli: %d", currentLevel, currentBeli),
         TextSize = 14
     })
     
     StatsSection:Section({
+        Title = fragText,
+        TextSize = 12,
+        TextTransparency = 0.3
+    })
+    
+    StatsSection:Space()
+    
+    StatsSection:Section({
         Title = string.format(
-            "Ganado: Niveles +%d | Beli +%d | Mobs: %d",
-            Session.LevelsGained or 0, Session.BeliEarned or 0, 
+            "Ganado: +%d Niveles | +%d Beli | %d Mobs",
+            Session.LevelsGained or 0, 
+            Session.BeliEarned or 0, 
             Session.MobsKilled or 0
         ),
         TextSize = 12,
-        TextTransparency = 0.3
+        TextTransparency = 0.4
     })
     
     Tab:Space()
@@ -100,7 +118,7 @@ function DashboardTab:Create(Window, deps)
     Tab:Space({ Columns = 2 })
     
     -- ═══════════════════════════════════════════════════════════════
-    -- FOOTER: PERFIL DEL USUARIO
+    -- PERFIL DEL USUARIO
     -- ═══════════════════════════════════════════════════════════════
     
     local ProfileSection = Tab:Section({
@@ -113,21 +131,23 @@ function DashboardTab:Create(Window, deps)
     local player = Services.LocalPlayer
     local playerInfo = Utils:GetPlayerInfo()
     
-    -- Imagen de perfil (WindUI soporta imágenes)
+    -- Imagen de perfil usando el formato rbxthumb (funciona en Roblox)
     ProfileSection:Image({
-        Image = playerInfo.Thumbnail,
+        Image = playerInfo.ThumbnailId,
         AspectRatio = "1:1",
         Radius = 50
     })
     
     ProfileSection:Space()
     
+    -- Nombre de display
     ProfileSection:Section({
         Title = player.DisplayName,
         TextSize = 18,
         FontWeight = Enum.FontWeight.Bold
     })
     
+    -- Username con @
     ProfileSection:Section({
         Title = "@" .. player.Name,
         TextSize = 14,
@@ -139,11 +159,6 @@ function DashboardTab:Create(Window, deps)
     DashboardTab.Utils = Utils
     
     return Tab
-end
-
-function DashboardTab:Update()
-    -- Las actualizaciones se hacen en Session:Update()
-    -- WindUI no permite actualizar secciones dinámicamente de forma sencilla
 end
 
 return DashboardTab

@@ -1,9 +1,13 @@
 --[[
     BLOXY HUB TITANIUM - MÓDULO: FARMING
-    Sistema de auto-farm y gestión de misiones - CORREGIDO
+    Sistema de auto-farm - VERSIÓN ROBUSTA PROBADA
 ]]
 
-local Farming = {}
+local Farming = {
+    CurrentQuest = nil,
+    QuestEnemy = nil,
+    IsGettingQuest = false
+}
 
 -- Dependencias
 local Services, Config, Utils, Session, Combat, QuestData
@@ -17,165 +21,193 @@ function Farming:Init(deps)
     QuestData = deps.QuestData
 end
 
--- Cache de Quest
-local QuestCache = {
-    LastUpdate = 0,
-    UpdateInterval = 3,
-    ActiveQuest = nil
-}
+-- ═══════════════════════════════════════════════════════════════
+-- OBTENER DATOS DEL JUGADOR
+-- ═══════════════════════════════════════════════════════════════
 
 function Farming:GetPlayerLevel()
-    local data = Services.LocalPlayer:FindFirstChild("Data")
-    if data and data:FindFirstChild("Level") then
-        return data.Level.Value
-    end
-    return 1
+    local success, result = pcall(function()
+        return Services.LocalPlayer:FindFirstChild("Data"):FindFirstChild("Level").Value
+    end)
+    return success and result or 1
 end
 
+-- ═══════════════════════════════════════════════════════════════
+-- SISTEMA DE QUESTS ROBUSTO
+-- ═══════════════════════════════════════════════════════════════
+
 function Farming:GetBestQuest()
-    local myLvl = self:GetPlayerLevel()
+    local myLevel = self:GetPlayerLevel()
     local world, _ = Utils:GetCurrentWorld()
-    local worldQuests = QuestData[world] or {}
+    local quests = QuestData[world] or {}
     
-    if #worldQuests == 0 then
-        print("[FARMING] No hay quests para este mundo: " .. world)
-        return nil
-    end
+    if #quests == 0 then return nil end
     
-    local best = worldQuests[1]
-    for _, q in ipairs(worldQuests) do
-        if myLvl >= q.Level then
+    local best = quests[1]
+    for _, q in ipairs(quests) do
+        if myLevel >= q.Level then
             best = q
         end
     end
     
-    print("[FARMING] Quest seleccionada: " .. (best.Quest or "ninguna") .. " para nivel " .. myLvl)
     return best
 end
 
-function Farming:CheckQuest()
-    -- Verificar si hay quest activa
-    local playerGui = Services.LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
-    
-    local main = playerGui:FindFirstChild("Main")
-    if not main then return false end
-    
-    local questFrame = main:FindFirstChild("Quest")
-    if questFrame and questFrame.Visible then
-        return true
-    end
-    
-    -- Método alternativo: verificar quest data
-    local plrData = Services.LocalPlayer:FindFirstChild("PlayerGui")
-    if plrData then
-        local questData = plrData:FindFirstChild("Quest")
-        if questData then
+-- Verificar si hay quest activa (método robusto)
+function Farming:HasQuest()
+    local success, result = pcall(function()
+        local plrGui = Services.LocalPlayer:FindFirstChild("PlayerGui")
+        if not plrGui then return false end
+        
+        local main = plrGui:FindFirstChild("Main")
+        if not main then return false end
+        
+        local quest = main:FindFirstChild("Quest")
+        if quest and quest.Visible then
             return true
         end
-    end
+        
+        return false
+    end)
     
-    return false
+    return success and result or false
 end
 
+-- Tomar quest usando el remote correcto
 function Farming:TakeQuest()
-    local currentTime = tick()
+    if self.IsGettingQuest then return false end
+    if self:HasQuest() then return true end
     
-    -- Si ya hay quest activa, no hacer nada
-    if self:CheckQuest() then 
-        return true 
-    end
-    
-    -- Evitar spam de peticiones
-    if currentTime - QuestCache.LastUpdate < QuestCache.UpdateInterval then
-        return false
-    end
+    self.IsGettingQuest = true
     
     local best = self:GetBestQuest()
     if not best then 
-        Session.Status = "Sin quest disponible para tu nivel"
+        self.IsGettingQuest = false
         return false 
     end
     
-    QuestCache.LastUpdate = currentTime
-    Session.Status = "Obteniendo Quest: " .. best.Quest
+    Session.Status = "Tomando quest: " .. (best.Quest or "Unknown")
     
-    -- Teletransportar al NPC
-    print("[FARMING] Teletransportando a NPC de quest...")
-    Utils:TeleportToLoop(best.CFrame, 0.5)
-    task.wait(0.5)
-    
-    -- Tomar la quest
+    -- Teletransportar al NPC de quest
     pcall(function()
-        local remotes = Services.ReplicatedStorage:FindFirstChild("Remotes")
-        if remotes and remotes:FindFirstChild("CommF_") then
-            remotes.CommF_:InvokeServer("StartQuest", best.Quest, 1)
-            print("[FARMING] Quest iniciada: " .. best.Quest)
+        local rootPart = Utils:GetRootPart()
+        if rootPart then
+            for i = 1, 10 do
+                rootPart.CFrame = best.CFrame
+                task.wait(0.05)
+            end
+        end
+    end)
+    
+    task.wait(0.3)
+    
+    -- Tomar la quest usando el remote
+    pcall(function()
+        local remote = Services.ReplicatedStorage:FindFirstChild("Remotes")
+        if remote then
+            local comm = remote:FindFirstChild("CommF_")
+            if comm then
+                comm:InvokeServer("StartQuest", best.Quest, 1)
+            end
         end
     end)
     
     task.wait(0.5)
-    return self:CheckQuest()
+    
+    -- Guardar info de la quest
+    self.CurrentQuest = best
+    self.QuestEnemy = best.Enemy
+    
+    self.IsGettingQuest = false
+    return self:HasQuest()
 end
+
+-- ═══════════════════════════════════════════════════════════════
+-- AUTO FARM PRINCIPAL
+-- ═══════════════════════════════════════════════════════════════
 
 function Farming:AutoLevel()
     if not Config.AutoFarm.Enabled then return end
-    if Config.AutoFarm.Mode ~= "Level" then return end
     
     -- Primero verificar si tenemos quest
-    if not self:CheckQuest() then
+    if not self:HasQuest() then
         self:TakeQuest()
         return
     end
     
-    local best = self:GetBestQuest()
-    if not best then return end
+    -- Buscar enemigo de la quest actual
+    local targetEnemy = self.QuestEnemy
+    local enemy = nil
     
-    -- Buscar enemigo de la quest o el más cercano
-    local enemy = Utils:GetEnemyByName(best.Enemy)
-    
-    if not enemy then
-        -- Si no hay enemigo de quest, teletransportar a la zona
-        Session.Status = "Buscando: " .. best.Enemy
-        
-        -- Teletransportar cerca del NPC de quest (donde spawnean los enemigos)
-        Utils:TeleportTo(best.CFrame * CFrame.new(math.random(-50, 50), 0, math.random(-50, 50)), false)
-        task.wait(0.5)
-        
-        -- Buscar de nuevo
-        enemy = Utils:GetEnemyByName(best.Enemy) or Utils:GetClosestEnemy(200)
+    if targetEnemy then
+        enemy = Utils:GetEnemyByName(targetEnemy)
     end
     
+    -- Si no hay enemigo de quest, buscar el más cercano
+    if not enemy then
+        enemy = Utils:GetClosestEnemy(500)
+    end
+    
+    -- Si hay enemigo, atacar
     if enemy then
-        -- Equipar arma
-        Utils:Equip("Melee")
-        task.wait(0.1)
-        
-        -- Atacar
-        Combat:AttackEnemy(enemy)
-        
-        -- Mastery
-        if Config.Mastery.Enabled then
-            Combat:ExecuteMasteryFinisher(enemy)
+        local enemyHum = enemy:FindFirstChild("Humanoid")
+        if enemyHum and enemyHum.Health > 0 then
+            -- Equipar arma
+            Utils:Equip("Melee")
+            task.wait(0.05)
+            
+            -- Atacar
+            Combat:AttackEnemy(enemy)
+            
+            -- Mastery finisher
+            if Config.Mastery.Enabled then
+                Combat:ExecuteMasteryFinisher(enemy)
+            end
         end
     else
-        Session.Status = "Esperando respawn de " .. best.Enemy
+        -- No hay enemigos, teletransportar a la zona de la quest
+        if self.CurrentQuest and self.CurrentQuest.CFrame then
+            Session.Status = "Buscando: " .. (self.QuestEnemy or "enemigos")
+            
+            -- Teleport a zona de spawn de enemigos
+            local spawnPos = self.CurrentQuest.CFrame * CFrame.new(
+                math.random(-30, 30), 
+                0, 
+                math.random(-30, 30)
+            )
+            
+            Utils:TeleportTo(spawnPos, false)
+        end
     end
 end
+
+-- ═══════════════════════════════════════════════════════════════
+-- AUTO MASTERY
+-- ═══════════════════════════════════════════════════════════════
 
 function Farming:AutoMastery()
     if not Config.Mastery.Enabled then return end
     
-    -- Equipar arma seleccionada
+    -- Equipar arma de mastery
     local weapon = Config.AIMastery.SelectedWeapon or "Melee"
     Utils:Equip(weapon)
     
-    local enemy = Utils:GetClosestEnemy(300)
+    -- Buscar enemigo
+    local enemy = Utils:GetClosestEnemy(500)
     
     if enemy then
-        Session.Status = "Mastery: " .. enemy.Name
-        Combat:AttackEnemy(enemy)
-        Combat:ExecuteMasteryFinisher(enemy)
+        local enemyHum = enemy:FindFirstChild("Humanoid")
+        if enemyHum and enemyHum.Health > 0 then
+            Session.Status = "Mastery: " .. enemy.Name
+            
+            -- Atacar
+            Combat:AttackEnemy(enemy)
+            
+            -- Usar habilidades si está activo
+            if Config.AIMastery.Enabled then
+                Combat:UseAllSkills()
+            end
+        end
     else
         Session.Status = "Buscando enemigos para mastery..."
     end

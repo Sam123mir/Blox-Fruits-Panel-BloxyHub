@@ -1,6 +1,6 @@
 --[[
     BLOXY HUB TITANIUM - MÓDULO: SESSION
-    Estadísticas de sesión del jugador - CORREGIDO
+    Estadísticas de sesión - VERSIÓN ROBUSTA
 ]]
 
 local Session = {
@@ -8,6 +8,10 @@ local Session = {
     StartLevel = 0,
     StartBeli = 0,
     StartFragments = 0,
+    
+    CurrentLevel = 0,
+    CurrentBeli = 0,
+    CurrentFragments = 0,
     
     LevelsGained = 0,
     BeliEarned = 0,
@@ -18,105 +22,163 @@ local Session = {
     Uptime = "00:00:00",
     Ping = 0,
     FPS = 60,
-    Status = "Esperando Datos..."
+    Status = "Iniciando..."
 }
 
 -- Dependencias
 local Services
+local Initialized = false
 
 function Session:Init(deps)
     Services = deps.Services
     
-    -- Inicialización segura de estadísticas
+    -- Esperar a que el juego cargue completamente
     task.spawn(function()
-        task.wait(2) -- Esperar a que cargue el juego
+        task.wait(3)
         
-        local player = Services.LocalPlayer
-        local data = player:WaitForChild("Data", 30)
+        -- Obtener datos iniciales
+        local success = pcall(function()
+            local plr = Services.LocalPlayer
+            local data = plr:WaitForChild("Data", 30)
+            
+            if data then
+                local lvl = data:FindFirstChild("Level")
+                local beli = data:FindFirstChild("Beli")
+                local frags = data:FindFirstChild("Fragments")
+                
+                if lvl then self.StartLevel = lvl.Value end
+                if beli then self.StartBeli = beli.Value end
+                if frags then self.StartFragments = frags.Value end
+                
+                self.Status = "Sesión Iniciada"
+                Initialized = true
+                print("[SESSION] Inicializado - Nivel: " .. self.StartLevel)
+            end
+        end)
         
-        if data then
-            local levelVal = data:FindFirstChild("Level")
-            local beliVal = data:FindFirstChild("Beli")
-            local fragmentsVal = data:FindFirstChild("Fragments")
-            
-            if levelVal then self.StartLevel = levelVal.Value end
-            if beliVal then self.StartBeli = beliVal.Value end
-            if fragmentsVal then self.StartFragments = fragmentsVal.Value end
-            
-            self.Status = "Sesión Iniciada"
-            print("[SESSION] Datos iniciales: Lvl=" .. self.StartLevel .. " Beli=" .. self.StartBeli)
-        else
-            warn("[SESSION] No se encontró carpeta Data del jugador")
+        if not success then
+            warn("[SESSION] Error al inicializar datos")
         end
     end)
 end
 
+-- Obtener nivel actual (método robusto)
 function Session:GetPlayerLevel()
-    local data = Services.LocalPlayer:FindFirstChild("Data")
-    if data and data:FindFirstChild("Level") then
-        return data.Level.Value
-    end
-    return 0
+    local success, result = pcall(function()
+        local data = Services.LocalPlayer:FindFirstChild("Data")
+        if data and data:FindFirstChild("Level") then
+            return data.Level.Value
+        end
+        return 0
+    end)
+    return success and result or 0
 end
 
+-- Obtener Beli actual
 function Session:GetPlayerBeli()
-    local data = Services.LocalPlayer:FindFirstChild("Data")
-    if data and data:FindFirstChild("Beli") then
-        return data.Beli.Value
-    end
-    return 0
+    local success, result = pcall(function()
+        local data = Services.LocalPlayer:FindFirstChild("Data")
+        if data and data:FindFirstChild("Beli") then
+            return data.Beli.Value
+        end
+        return 0
+    end)
+    return success and result or 0
 end
 
+-- Obtener Fragmentos actuales
 function Session:GetPlayerFragments()
-    local data = Services.LocalPlayer:FindFirstChild("Data")
-    if data and data:FindFirstChild("Fragments") then
-        return data.Fragments.Value
-    end
-    return 0
+    local success, result = pcall(function()
+        local data = Services.LocalPlayer:FindFirstChild("Data")
+        if data and data:FindFirstChild("Fragments") then
+            return data.Fragments.Value
+        end
+        return 0
+    end)
+    return success and result or 0
 end
 
+-- Obtener FPS real (método probado)
+function Session:GetRealFPS()
+    local success, fps = pcall(function()
+        local RunService = game:GetService("RunService")
+        local lastTick = tick()
+        RunService.RenderStepped:Wait()
+        local delta = tick() - lastTick
+        return math.floor(1 / delta)
+    end)
+    return success and fps or 60
+end
+
+-- Obtener Ping real (método probado)
+function Session:GetRealPing()
+    local success, ping = pcall(function()
+        -- Método 1: Stats service
+        local Stats = game:GetService("Stats")
+        local network = Stats:FindFirstChild("Network")
+        if network then
+            local serverStats = network:FindFirstChild("ServerStatsItem")
+            if serverStats then
+                local dataPing = serverStats:FindFirstChild("Data Ping")
+                if dataPing then
+                    return math.floor(dataPing:GetValue())
+                end
+            end
+        end
+        
+        -- Método 2: PerformanceStats
+        local perfStats = Stats:FindFirstChild("PerformanceStats")
+        if perfStats then
+            local ping = perfStats:FindFirstChild("Ping")
+            if ping then
+                return math.floor(ping:GetValue())
+            end
+        end
+        
+        return 0
+    end)
+    return success and ping or 0
+end
+
+-- Obtener hora actual de Lima, Perú (UTC-5)
+function Session:GetLimaTime()
+    local utcTime = os.time()
+    -- Lima está en UTC-5 (sin horario de verano en Perú)
+    local limaOffset = -5 * 3600
+    local limaTime = utcTime + limaOffset
+    return os.date("!%H:%M:%S", limaTime)
+end
+
+-- Actualización principal
 function Session:Update()
-    -- Uptime
+    -- Uptime (tiempo desde inicio)
     local elapsed = os.time() - self.StartTime
     local hours = math.floor(elapsed / 3600)
     local mins = math.floor((elapsed % 3600) / 60)
     local secs = elapsed % 60
     self.Uptime = string.format("%02d:%02d:%02d", hours, mins, secs)
     
+    -- FPS real (dinámico)
+    self.FPS = self:GetRealFPS()
+    
+    -- Ping real
+    self.Ping = self:GetRealPing()
+    
     -- Estadísticas actuales
-    local currentLevel = self:GetPlayerLevel()
-    local currentBeli = self:GetPlayerBeli()
-    local currentFragments = self:GetPlayerFragments()
+    self.CurrentLevel = self:GetPlayerLevel()
+    self.CurrentBeli = self:GetPlayerBeli()
+    self.CurrentFragments = self:GetPlayerFragments()
     
-    if currentLevel > 0 then
-        self.LevelsGained = currentLevel - self.StartLevel
+    -- Calcular ganancias
+    if self.CurrentLevel > 0 and self.StartLevel > 0 then
+        self.LevelsGained = math.max(0, self.CurrentLevel - self.StartLevel)
     end
-    if currentBeli > 0 then
-        self.BeliEarned = currentBeli - self.StartBeli
+    if self.CurrentBeli > 0 and self.StartBeli > 0 then
+        self.BeliEarned = math.max(0, self.CurrentBeli - self.StartBeli)
     end
-    if currentFragments > 0 then
-        self.FragmentsEarned = currentFragments - self.StartFragments
+    if self.CurrentFragments > 0 and self.StartFragments > 0 then
+        self.FragmentsEarned = math.max(0, self.CurrentFragments - self.StartFragments)
     end
-    
-    -- Ping (método más confiable)
-    pcall(function()
-        local stats = game:GetService("Stats")
-        local networkStats = stats:FindFirstChild("Network")
-        if networkStats then
-            local serverStats = networkStats:FindFirstChild("ServerStatsItem")
-            if serverStats then
-                local pingItem = serverStats:FindFirstChild("Data Ping")
-                if pingItem then
-                    self.Ping = math.floor(pingItem:GetValue())
-                end
-            end
-        end
-    end)
-    
-    -- FPS
-    pcall(function()
-        self.FPS = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
-    end)
 end
 
 function Session:AddMobKill()
