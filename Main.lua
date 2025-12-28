@@ -1,6 +1,6 @@
 --[[
     ╔══════════════════════════════════════════════════════════════╗
-    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.1               ║
+    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.0               ║
     ║  Arquitectura Modular Profesional | Diseñado por Sammir    ║
     ╚══════════════════════════════════════════════════════════════╝
 --]]
@@ -277,9 +277,214 @@ local Config = {
     -- UI Settings
     UI = {
         Theme = "Dark", -- Dark, Light, Amoled
+        Language = "Spanish", -- Spanish, English, Portuguese
         Notifications = true,
         StatusBar = true,
         MinimizeSymbol = "−"
+    }
+}
+
+-- ═══════════════════════════════════════════════════════════════
+-- MÓDULO: LOCALIZACIÓN (i18n)
+-- ═══════════════════════════════════════════════════════════════
+
+local I18n = {
+    Dictionary = {
+        ["Spanish"] = {
+            ["Dashboard"] = "Dashboard",
+            ["Farming"] = "Farming",
+            ["Combate"] = "Combate",
+            ["Personaje"] = "Personaje",
+            ["Stats"] = "Stats",
+            ["Rendimiento"] = "Rendimiento",
+            ["Seguridad"] = "Seguridad",
+            ["Historial"] = "Historial",
+            ["Ajustes"] = "Ajustes",
+            ["BIENVENIDO"] = "💎 BIENVENIDO A TITANIUM ELITE",
+            ["WelcomeContent"] = "El script de Blox Fruits más avanzado y con IA profesional.",
+            ["EstadoScript"] = "Estado del Script",
+            ["SesionStats"] = "Estadísticas de Sesión",
+            ["MundoActual"] = "Mundo Actual",
+            ["AutoFarm"] = "🔥 Auto Farmear",
+            ["AutoFarmLvl"] = "Auto Farmear (Nivel)",
+            ["SeleccionarArma"] = "Seleccionar Arma",
+            ["ModoIA"] = "Modo IA (Habilidades Inteligentes)",
+            ["Habilidades"] = "Selección de Habilidades",
+            ["UsarHabilidad"] = "Usar Habilidad",
+            ["PvPPro"] = "⚔️ Modo PvP Profesional",
+            ["ActivarPvP"] = "Activar Modo PvP",
+            ["AutoPvPIA"] = "Auto PvP (IA Pro)",
+            ["MaxObjects"] = "Número de Objetivos a Eliminar",
+            ["TeleportPlayer"] = "📍 Teletransporte a Jugador",
+            ["SelectPlayer"] = "Seleccionar Jugador",
+            ["TPToPlayer"] = "🚀 Teletransportarse al Jugador",
+            ["RefreshPlayers"] = "🔄 Actualizar Lista de Jugadores",
+            ["MobilityEnhancements"] = "Mejoras de Combate y Movilidad",
+            ["AutoAura"] = "✨ Auto Aura (Haki)",
+            ["InfiniteSkyjump"] = "🕊️ Salto Infinito (Skyjump)",
+            ["SpeedJump"] = "Velocidad y Salto",
+            ["WalkSpeed"] = "Velocidad de Caminado",
+            ["JumpPower"] = "Poder de Salto",
+            ["StatDistribution"] = "Distribución de Estadísticas",
+            ["AutoStatsLoop"] = "📊 Auto Stats (Bucle)",
+            ["ApplyPoints"] = "⚡ Aplicar Puntos Ahora",
+            ["PerformanceOptimization"] = "Optimización de Rendimiento",
+            ["CPUMode"] = "💻 Modo CPU (Remover Texturas)",
+            ["WhiteScreen"] = "⚪ Pantalla Blanca (Máximo FPS)",
+            ["FPSBoost"] = "🚀 FPS Boost",
+            ["ProtectionAntiBan"] = "Protección y Anti-Ban",
+            ["AntiAFK"] = "🔄 Anti-AFK",
+            ["AdminDetector"] = "👁️ Detector de Admins",
+            ["AutoLeaveAdmin"] = "🚪 Auto-Leave al Detectar Admin",
+            ["SystemDebug"] = "Depuración del Sistema",
+            ["ActivityLog"] = "Registro de Actividad",
+            ["ClearHistory"] = "🧹 Limpiar Historial",
+            ["CopyClipboard"] = "📋 Copiar Logs al Portapapeles",
+            ["Configuracion"] = "Configuración General",
+            ["Tema"] = "Tema de la UI",
+            ["Idioma"] = "Idioma del Panel",
+            ["Notificaciones"] = "Notificaciones",
+            ["Transparencia"] = "Efecto de Transparencia (Acrylic)",
+            ["ReiniciarPanel"] = "Reiniciar Bloxy Hub",
+            ["CerrarScript"] = "Cerrar Script por Completo",
+            ["IdiomaCambiado"] = "Idioma cambiado correctamente. Reinicia para aplicar todos los cambios.",
+            ["RestartRequired"] = "Reinicio Requerido",
+            ["WaitingData"] = "Esperando Datos...",
+            ["SessionStarted"] = "Sesión Iniciada",
+            ["ReadyFarm"] = "Listo para farmear",
+            ["Restating3s"] = "Reiniciando en 3 segundos...",
+            ["LoadedSuccess"] = "Blox Fruits Panel cargado con éxito. ¡Buen farm!"
+        },
+        ["English"] = {
+            ["Dashboard"] = "Dashboard",
+            ["Farming"] = "Farming",
+            ["Combate"] = "Combat",
+            ["Personaje"] = "Player",
+            ["Stats"] = "Stats",
+            ["Rendimiento"] = "Performance",
+            ["Seguridad"] = "Security",
+            ["Historial"] = "Logs",
+            ["Ajustes"] = "Settings",
+            ["BIENVENIDO"] = "💎 WELCOME TO TITANIUM ELITE",
+            ["WelcomeContent"] = "The most advanced Blox Fruits script with professional AI.",
+            ["EstadoScript"] = "Script Status",
+            ["SesionStats"] = "Session Statistics",
+            ["MundoActual"] = "Current World",
+            ["AutoFarm"] = "🔥 Auto Farming",
+            ["AutoFarmLvl"] = "Auto Farm (Level)",
+            ["SeleccionarArma"] = "Select Weapon",
+            ["ModoIA"] = "AI Mode (Smart Skills)",
+            ["Habilidades"] = "Skill Selection",
+            ["UsarHabilidad"] = "Use Skill",
+            ["PvPPro"] = "⚔️ Professional PvP Mode",
+            ["ActivarPvP"] = "Enable PvP Mode",
+            ["AutoPvPIA"] = "Auto PvP (Pro AI)",
+            ["MaxObjects"] = "Number of Targets to Eliminate",
+            ["TeleportPlayer"] = "📍 Player Teleport",
+            ["SelectPlayer"] = "Select Player",
+            ["TPToPlayer"] = "🚀 Teleport to Player",
+            ["RefreshPlayers"] = "🔄 Refresh Player List",
+            ["MobilityEnhancements"] = "Combat & Mobility Enhancements",
+            ["AutoAura"] = "✨ Auto Aura (Haki)",
+            ["InfiniteSkyjump"] = "🕊️ Infinite Skyjump",
+            ["SpeedJump"] = "Speed & Jump",
+            ["WalkSpeed"] = "Walk Speed",
+            ["JumpPower"] = "Jump Power",
+            ["StatDistribution"] = "Stat Distribution",
+            ["AutoStatsLoop"] = "📊 Auto Stats (Loop)",
+            ["ApplyPoints"] = "⚡ Apply Points Now",
+            ["PerformanceOptimization"] = "Performance Optimization",
+            ["CPUMode"] = "💻 CPU Mode (Remove Textures)",
+            ["WhiteScreen"] = "⚪ White Screen (Max FPS)",
+            ["FPSBoost"] = "🚀 FPS Boost",
+            ["ProtectionAntiBan"] = "Protection & Anti-Ban",
+            ["AntiAFK"] = "🔄 Anti-AFK",
+            ["AdminDetector"] = "👁️ Admin Detector",
+            ["AutoLeaveAdmin"] = "🚪 Auto-Leave on Admin Detected",
+            ["SystemDebug"] = "System Debug",
+            ["ActivityLog"] = "Activity Log",
+            ["ClearHistory"] = "🧹 Clear History",
+            ["CopyClipboard"] = "📋 Copy Logs to Clipboard",
+            ["Configuracion"] = "General Configuration",
+            ["Tema"] = "UI Theme",
+            ["Idioma"] = "Panel Language",
+            ["Notificaciones"] = "Notifications",
+            ["Transparencia"] = "Transparency Effect (Acrylic)",
+            ["ReiniciarPanel"] = "Restart Bloxy Hub",
+            ["CerrarScript"] = "Close Script Completely",
+            ["IdiomaCambiado"] = "Language changed successfully. Restart to apply all changes.",
+            ["RestartRequired"] = "Restart Required",
+            ["WaitingData"] = "Waiting for Data...",
+            ["SessionStarted"] = "Session Started",
+            ["ReadyFarm"] = "Ready to farm",
+            ["Restating3s"] = "Restarting in 3 seconds...",
+            ["LoadedSuccess"] = "Blox Fruits Panel loaded successfully. Happy farming!"
+        },
+        ["Portuguese"] = {
+            ["Dashboard"] = "Dashboard",
+            ["Farming"] = "Farming",
+            ["Combate"] = "Combate",
+            ["Personaje"] = "Personagem",
+            ["Stats"] = "Stats",
+            ["Rendimiento"] = "Desempenho",
+            ["Seguridad"] = "Segurança",
+            ["Historial"] = "Histórico",
+            ["Ajustes"] = "Ajustes",
+            ["BIENVENIDO"] = "💎 BEM-VINDO AO TITANIUM ELITE",
+            ["WelcomeContent"] = "O script de Blox Fruits mais avançado com IA profissional.",
+            ["EstadoScript"] = "Status do Script",
+            ["SesionStats"] = "Estatísticas da Sessão",
+            ["MundoActual"] = "Mundo Atual",
+            ["AutoFarm"] = "🔥 Auto Farmar",
+            ["AutoFarmLvl"] = "Auto Farmar (Nível)",
+            ["SeleccionarArma"] = "Selecionar Arma",
+            ["ModoIA"] = "Modo IA (Habilidades Inteligentes)",
+            ["Habilidades"] = "Seleção de Habilidades",
+            ["UsarHabilidad"] = "Usar Habilidade",
+            ["PvPPro"] = "⚔️ Modo PvP Profissional",
+            ["ActivarPvP"] = "Ativar Modo PvP",
+            ["AutoPvPIA"] = "Auto PvP (IA Pro)",
+            ["MaxObjects"] = "Número de Objetivos a Eliminar",
+            ["TeleportPlayer"] = "📍 Teletransporte para Jogador",
+            ["SelectPlayer"] = "Selecionar Jogador",
+            ["TPToPlayer"] = "🚀 Teletransporte para Jogador",
+            ["RefreshPlayers"] = "🔄 Atualizar Lista de Jogadores",
+            ["MobilityEnhancements"] = "Melhorias de Combate e Mobilidade",
+            ["AutoAura"] = "✨ Auto Aura (Haki)",
+            ["InfiniteSkyjump"] = "🕊️ Salto Infinito (Skyjump)",
+            ["SpeedJump"] = "Velocidade e Salto",
+            ["WalkSpeed"] = "Velocidade de Caminhada",
+            ["JumpPower"] = "Poder de Salto",
+            ["StatDistribution"] = "Distribuição de Estatísticas",
+            ["AutoStatsLoop"] = "📊 Auto Stats (Loop)",
+            ["ApplyPoints"] = "⚡ Aplicar Pontos Agora",
+            ["PerformanceOptimization"] = "Otimização de Desempenho",
+            ["CPUMode"] = "💻 Modo CPU (Remover Texturas)",
+            ["WhiteScreen"] = "⚪ Tela Branca (FPS Máximo)",
+            ["FPSBoost"] = "🚀 FPS Boost",
+            ["ProtectionAntiBan"] = "Proteção e Anti-Ban",
+            ["AntiAFK"] = "🔄 Anti-AFK",
+            ["AdminDetector"] = "👁️ Detector de Admins",
+            ["AutoLeaveAdmin"] = "🚪 Auto-Sair ao Detectar Admin",
+            ["SystemDebug"] = "Depuração do Sistema",
+            ["ActivityLog"] = "Registro de Atividade",
+            ["ClearHistory"] = "🧹 Limpar Histórico",
+            ["CopyClipboard"] = "📋 Copiar Logs para a Área de Transferência",
+            ["Configuracion"] = "Configuração Geral",
+            ["Tema"] = "Tema da UI",
+            ["Idioma"] = "Idioma do Painel",
+            ["Notificaciones"] = "Notificações",
+            ["Transparencia"] = "Efeito de Transparência (Acrylic)",
+            ["ReiniciarPanel"] = "Reiniciar Bloxy Hub",
+            ["CerrarScript"] = "Fechar Script Completamente",
+            ["IdiomaCambiado"] = "Idioma alterado com sucesso. Reinicie para aplicar todas as mudanças.",
+            ["RestartRequired"] = "Reinicialização Necesária",
+            ["WaitingData"] = "Aguardando Dados...",
+            ["SessionStarted"] = "Sessão Iniciada",
+            ["ReadyFarm"] = "Pronto para farmar",
+            ["Restating3s"] = "Reiniciando em 3 segundos...",
+            ["LoadedSuccess"] = "Blox Fruits Panel carregado com sucesso. Bom farm!"
+        }
     }
 }
 
@@ -303,7 +508,7 @@ local Session = {
     Uptime = "00:00:00",
     Ping = 0,
     FPS = 60,
-    Status = "Esperando Datos..."
+    Status = Utils:Translate("WaitingData")
 }
 
 -- Inicialización segura de estadísticas (Móvil)
@@ -313,7 +518,7 @@ task.spawn(function()
         Session.StartLevel = data:WaitForChild("Level", 10).Value
         Session.StartBeli = data:WaitForChild("Beli", 10).Value
         Session.StartFragments = data:WaitForChild("Fragments", 10).Value
-        Session.Status = "Sesión Iniciada"
+        Session.Status = Utils:Translate("SessionStarted")
     end
 end)
 
@@ -503,6 +708,12 @@ function Utils:Notify(title, message, duration)
             Duration = duration or 3
         })
     end
+end
+
+function Utils:Translate(key)
+    local lang = Config.UI.Language or "Spanish"
+    local dict = I18n.Dictionary[lang] or I18n.Dictionary["Spanish"]
+    return dict[key] or key
 end
 
 -- // MÓDULO: INTELIGENCIA ARTIFICIAL (COMBATE PRO)
@@ -978,15 +1189,15 @@ local Window = Fluent:CreateWindow({
 -- ═══════════════════════════════════════════════════════════════
 
 local Tabs = {
-    Dashboard = Window:AddTab({ Title = "Dashboard", Icon = "layout" }),
-    Farming = Window:AddTab({ Title = "Farming", Icon = "sword" }),
-    Combat = Window:AddTab({ Title = "Combate", Icon = "zap" }),
-    Player = Window:AddTab({ Title = "Personaje", Icon = "user" }),
-    Stats = Window:AddTab({ Title = "Stats", Icon = "bar-chart" }),
-    Performance = Window:AddTab({ Title = "Rendimiento", Icon = "cpu" }),
-    Security = Window:AddTab({ Title = "Seguridad", Icon = "shield" }),
-    Logs = Window:AddTab({ Title = "Historial", Icon = "file-text" }),
-    Settings = Window:AddTab({ Title = "Ajustes", Icon = "settings" })
+    Dashboard = Window:AddTab({ Title = Utils:Translate("Dashboard"), Icon = "layout" }),
+    Farming = Window:AddTab({ Title = Utils:Translate("Farming"), Icon = "sword" }),
+    Combat = Window:AddTab({ Title = Utils:Translate("Combate"), Icon = "zap" }),
+    Player = Window:AddTab({ Title = Utils:Translate("Personaje"), Icon = "user" }),
+    Stats = Window:AddTab({ Title = Utils:Translate("Stats"), Icon = "bar-chart" }),
+    Performance = Window:AddTab({ Title = Utils:Translate("Rendimiento"), Icon = "cpu" }),
+    Security = Window:AddTab({ Title = Utils:Translate("Seguridad"), Icon = "shield" }),
+    Logs = Window:AddTab({ Title = Utils:Translate("Historial"), Icon = "file-text" }),
+    Settings = Window:AddTab({ Title = Utils:Translate("Ajustes"), Icon = "settings" })
 }
 
 -- ═══════════════════════════════════════════════════════════════
@@ -994,22 +1205,22 @@ local Tabs = {
 -- ═══════════════════════════════════════════════════════════════
 
 Tabs.Dashboard:AddParagraph({
-    Title = "💎 BIENVENIDO A TITANIUM ELITE",
-    Content = "El script de Blox Fruits más avanzado y con IA profesional."
+    Title = Utils:Translate("BIENVENIDO"),
+    Content = Utils:Translate("WelcomeContent")
 })
 
 local StatusLabel = Tabs.Dashboard:AddParagraph({
-    Title = "Estado del Script",
+    Title = Utils:Translate("EstadoScript"),
     Content = "Cargando..."
 })
 
 local StatsLabel = Tabs.Dashboard:AddParagraph({
-    Title = "Estadísticas de Sesión",
+    Title = Utils:Translate("SesionStats"),
     Content = "Cargando..."
 })
 
 local WorldInfo = Tabs.Dashboard:AddParagraph({
-    Title = "Mundo Actual",
+    Title = Utils:Translate("MundoActual"),
     Content = "Detectando..."
 })
 
@@ -1017,10 +1228,10 @@ local WorldInfo = Tabs.Dashboard:AddParagraph({
 -- TAB: FARMING
 -- ═══════════════════════════════════════════════════════════════
 
-local FarmingSection = Tabs.Farming:AddSection("🔥 Auto Farmear")
+local FarmingSection = Tabs.Farming:AddSection(Utils:Translate("AutoFarm"))
 
 FarmingSection:AddToggle("AutoFarmToggle", {
-    Title = "Auto Farmear (Nivel)",
+    Title = Utils:Translate("AutoFarmLvl"),
     Default = Config.AutoFarm.Enabled,
     Callback = function(value)
         Config.AutoFarm.Enabled = value
@@ -1039,7 +1250,7 @@ MasterySection:AddToggle("MasteryToggle", {
 })
 
 local MasteryWeaponDropdown = MasterySection:AddDropdown("MasteryWeaponSelect", {
-    Title = "Seleccionar Arma",
+    Title = Utils:Translate("SeleccionarArma"),
     Values = {"Melee", "Sword", "Blox Fruit", "Gun"},
     Default = "Melee",
     Callback = function(option)
@@ -1048,18 +1259,18 @@ local MasteryWeaponDropdown = MasterySection:AddDropdown("MasteryWeaponSelect", 
 })
 
 MasterySection:AddToggle("MasteryIA", {
-    Title = "Modo IA (Habilidades Inteligentes)",
+    Title = Utils:Translate("ModoIA"),
     Default = Config.AIMastery.Enabled,
     Callback = function(value)
         Config.AIMastery.Enabled = value
     end
 })
 
-local SkillsSection = Tabs.Farming:AddSection("Selección de Habilidades")
+local SkillsSection = Tabs.Farming:AddSection(Utils:Translate("Habilidades"))
 
 for _, key in ipairs({"Z", "X", "C", "V"}) do
     SkillsSection:AddToggle("Skill"..key, {
-        Title = "Usar Habilidad " .. key,
+        Title = Utils:Translate("UsarHabilidad") .. " " .. key,
         Default = true,
         Callback = function(v) Config.AIMastery.Skills[key] = v end
     })
@@ -1069,10 +1280,10 @@ end
 -- TAB: COMBATE
 -- ═══════════════════════════════════════════════════════════════
 
-local PvPSection = Tabs.Combat:AddSection("⚔️ Modo PvP Profesional")
+local PvPSection = Tabs.Combat:AddSection(Utils:Translate("PvPPro"))
 
 PvPSection:AddToggle("PvPEnabled", {
-    Title = "Activar Modo PvP",
+    Title = Utils:Translate("ActivarPvP"),
     Default = Config.PvP.Enabled,
     Callback = function(value)
         Config.PvP.Enabled = value
@@ -1080,7 +1291,7 @@ PvPSection:AddToggle("PvPEnabled", {
 })
 
 PvPSection:AddToggle("PvPAI", {
-    Title = "Auto PvP (IA Pro)",
+    Title = Utils:Translate("AutoPvPIA"),
     Default = Config.PvP.AutoPvP,
     Callback = function(value)
         Config.PvP.AutoPvP = value
@@ -1088,7 +1299,7 @@ PvPSection:AddToggle("PvPAI", {
 })
 
 PvPSection:AddSlider("MaxKillsSlider", {
-    Title = "Número de Objetivos a Eliminar",
+    Title = Utils:Translate("MaxObjects"),
     Default = 1,
     Min = 1,
     Max = 10,
@@ -1096,7 +1307,7 @@ PvPSection:AddSlider("MaxKillsSlider", {
     Callback = function(v) Config.PvP.MaxKills = v end
 })
 
-local TeleportSection = Tabs.Combat:AddSection("📍 Teletransporte a Jugador")
+local TeleportSection = Tabs.Combat:AddSection(Utils:Translate("TeleportPlayer"))
 
 local PlayerList = {}
 local function UpdatePlayerList()
@@ -1108,7 +1319,7 @@ end
 UpdatePlayerList()
 
 local PlayerDropdown = TeleportSection:AddDropdown("PlayerTPSelect", {
-    Title = "Seleccionar Jugador",
+    Title = Utils:Translate("SelectPlayer"),
     Values = PlayerList,
     Callback = function(pName)
         Config.PvP.TargetPlayer = pName
@@ -1116,20 +1327,20 @@ local PlayerDropdown = TeleportSection:AddDropdown("PlayerTPSelect", {
 })
 
 TeleportSection:AddButton({
-    Title = "🚀 Teletransportarse al Jugador",
+    Title = Utils:Translate("TPToPlayer"),
     Callback = function()
         if Config.PvP.TargetPlayer then
             local target = Services.Players:FindFirstChild(Config.PvP.TargetPlayer)
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 Utils:TeleportTo(target.Character.HumanoidRootPart.CFrame)
-                Utils:Notify("Teleport", "Teletransportado a " .. target.Name, 2)
+                Utils:Notify("Teleport", "Teleported to " .. target.Name, 2)
             end
         end
     end
 })
 
 TeleportSection:AddButton({
-    Title = "🔄 Actualizar Lista de Jugadores",
+    Title = Utils:Translate("RefreshPlayers"),
     Callback = function()
         UpdatePlayerList()
         PlayerDropdown:SetValues(PlayerList)
@@ -1140,10 +1351,10 @@ TeleportSection:AddButton({
 -- TAB: PERSONAJE
 -- ═══════════════════════════════════════════════════════════════
 
-local MobilitySection = Tabs.Player:AddSection("Mejoras de Combate y Movilidad")
+local MobilitySection = Tabs.Player:AddSection(Utils:Translate("MobilityEnhancements"))
 
 MobilitySection:AddToggle("AutoAura", {
-    Title = "✨ Auto Aura (Haki)",
+    Title = Utils:Translate("AutoAura"),
     Default = Config.Player.AutoAura,
     Callback = function(value)
         Config.Player.AutoAura = value
@@ -1152,7 +1363,7 @@ MobilitySection:AddToggle("AutoAura", {
 })
 
 MobilitySection:AddToggle("InfiniteSkyjump", {
-    Title = "🕊️ Salto Infinito (Skyjump)",
+    Title = Utils:Translate("InfiniteSkyjump"),
     Default = Config.Player.InfiniteSkyjump,
     Callback = function(value)
         Config.Player.InfiniteSkyjump = value
@@ -1160,10 +1371,10 @@ MobilitySection:AddToggle("InfiniteSkyjump", {
     end
 })
 
-local SpeedSection = Tabs.Player:AddSection("Velocidad y Salto")
+local SpeedSection = Tabs.Player:AddSection(Utils:Translate("SpeedJump"))
 
 SpeedSection:AddSlider("WalkSpeed", {
-    Title = "Velocidad de Caminado",
+    Title = Utils:Translate("WalkSpeed"),
     Default = 16,
     Min = 16,
     Max = 200,
@@ -1174,7 +1385,7 @@ SpeedSection:AddSlider("WalkSpeed", {
 })
 
 SpeedSection:AddSlider("JumpPower", {
-    Title = "Poder de Salto",
+    Title = Utils:Translate("JumpPower"),
     Default = 50,
     Min = 50,
     Max = 300,
@@ -1188,7 +1399,7 @@ SpeedSection:AddSlider("JumpPower", {
 -- TAB: STATS
 -- ═══════════════════════════════════════════════════════════════
 
-local StatsSection = Tabs.Stats:AddSection("Distribución de Estadísticas")
+local StatsSection = Tabs.Stats:AddSection(Utils:Translate("StatDistribution"))
 
 StatsSection:AddToggle("StatMelee", {
     Title = "🥊 Melee",
@@ -1221,7 +1432,7 @@ StatsSection:AddToggle("StatFruit", {
 })
 
 StatsSection:AddToggle("AutoStatsToggle", {
-    Title = "📊 Auto Stats (Bucle)",
+    Title = Utils:Translate("AutoStatsLoop"),
     Default = Config.Stats.Enabled,
     Callback = function(value)
         Config.Stats.Enabled = value
@@ -1229,7 +1440,7 @@ StatsSection:AddToggle("AutoStatsToggle", {
 })
 
 StatsSection:AddButton({
-    Title = "⚡ Aplicar Puntos Ahora",
+    Title = Utils:Translate("ApplyPoints"),
     Callback = function()
         StatsManager:DistributePoints(true)
     end
@@ -1239,10 +1450,10 @@ StatsSection:AddButton({
 -- TAB: PERFORMANCE
 -- ═══════════════════════════════════════════════════════════════
 
-local PerfSection = Tabs.Performance:AddSection("Optimización de Rendimiento")
+local PerfSection = Tabs.Performance:AddSection(Utils:Translate("PerformanceOptimization"))
 
 PerfSection:AddToggle("CPUMode", {
-    Title = "💻 Modo CPU (Remover Texturas)",
+    Title = Utils:Translate("CPUMode"),
     Default = Config.Performance.CPUMode,
     Callback = function(value)
         Config.Performance.CPUMode = value
@@ -1251,7 +1462,7 @@ PerfSection:AddToggle("CPUMode", {
 })
 
 PerfSection:AddToggle("WhiteScreen", {
-    Title = "⚪ Pantalla Blanca (Máximo FPS)",
+    Title = Utils:Translate("WhiteScreen"),
     Default = Config.Performance.WhiteScreen,
     Callback = function(value)
         Performance:ToggleWhiteScreen(value)
@@ -1259,7 +1470,7 @@ PerfSection:AddToggle("WhiteScreen", {
 })
 
 PerfSection:AddToggle("FPSBoost", {
-    Title = "🚀 FPS Boost",
+    Title = Utils:Translate("FPSBoost"),
     Default = Config.Performance.FPSBoost,
     Callback = function(value)
         Config.Performance.FPSBoost = value
@@ -1271,10 +1482,10 @@ PerfSection:AddToggle("FPSBoost", {
 -- TAB: SEGURIDAD
 -- ═══════════════════════════════════════════════════════════════
 
-local SecuritySection = Tabs.Security:AddSection("Protección y Anti-Ban")
+local SecuritySection = Tabs.Security:AddSection(Utils:Translate("ProtectionAntiBan"))
 
 SecuritySection:AddToggle("AntiAFK", {
-    Title = "🔄 Anti-AFK",
+    Title = Utils:Translate("AntiAFK"),
     Default = Config.Security.AntiAFK,
     Callback = function(value)
         Config.Security.AntiAFK = value
@@ -1282,7 +1493,7 @@ SecuritySection:AddToggle("AntiAFK", {
 })
 
 SecuritySection:AddToggle("AdminDetector", {
-    Title = "👁️ Detector de Admins",
+    Title = Utils:Translate("AdminDetector"),
     Default = Config.Security.AdminDetector,
     Callback = function(value)
         Config.Security.AdminDetector = value
@@ -1290,7 +1501,7 @@ SecuritySection:AddToggle("AdminDetector", {
 })
 
 SecuritySection:AddToggle("AutoLeave", {
-    Title = "🚪 Auto-Leave al Detectar Admin",
+    Title = Utils:Translate("AutoLeaveAdmin"),
     Default = Config.Security.AutoLeaveOnAdmin,
     Callback = function(value)
         Config.Security.AutoLeaveOnAdmin = value
@@ -1301,22 +1512,22 @@ SecuritySection:AddToggle("AutoLeave", {
 -- TAB: LOGS
 -- ═══════════════════════════════════════════════════════════════
 
-local LogSection = Tabs.Logs:AddSection("Depuración del Sistema")
+local LogSection = Tabs.Logs:AddSection(Utils:Translate("SystemDebug"))
 
 LogSystem.UIElement = LogSection:AddParagraph({
-    Title = "Registro de Actividad",
-    Content = "Iniciandolo sistema de logs..."
+    Title = Utils:Translate("ActivityLog"),
+    Content = "Starting log system..."
 })
 
 LogSection:AddButton({
-    Title = "🧹 Limpiar Historial",
+    Title = Utils:Translate("ClearHistory"),
     Callback = function()
         LogSystem:Clear()
     end
 })
 
 LogSection:AddButton({
-    Title = "📋 Copiar Logs al Portapapeles",
+    Title = Utils:Translate("CopyClipboard"),
     Callback = function()
         pcall(function()
             local allLogs = table.concat(LogSystem.Entries, "\n")
@@ -1358,24 +1569,34 @@ LogSection:AddButton({
 -- TAB: AJUSTES
 -- ═══════════════════════════════════════════════════════════════
 
-local ConfigSection = Tabs.Settings:AddSection("Información del Script")
+local ConfigSection = Tabs.Settings:AddSection(Utils:Translate("Configuracion"))
+
+ConfigSection:AddDropdown("LanguageSelect", {
+    Title = Utils:Translate("Idioma"),
+    Values = {"Spanish", "English", "Portuguese"},
+    Default = Config.UI.Language,
+    Callback = function(option)
+        Config.UI.Language = option
+        Utils:Notify(Utils:Translate("RestartRequired"), Utils:Translate("IdiomaCambiado"), 5)
+    end
+})
 
 ConfigSection:AddParagraph({
     Title = "Blox Fruits Panel",
-    Content = "Marca: BLOXY HUB\nCategoría: Premium Titanium\nDesarrollado por Sammir"
+    Content = "Brand: BLOXY HUB\nCategory: Premium Titanium\nDeveloped by Sammir"
 })
 
 ConfigSection:AddButton({
-    Title = "🔄 Reiniciar Script",
+    Title = Utils:Translate("ReiniciarPanel"),
     Callback = function()
-        Utils:Notify("Sistema", "Reiniciando en 3 segundos...", 3)
+        Utils:Notify("System", Utils:Translate("Restating3s"), 3)
         task.wait(3)
         getgenv().BloxyHub.Restart()
     end
 })
 
 ConfigSection:AddButton({
-    Title = "❌ Cerrar Script",
+    Title = Utils:Translate("CerrarScript"),
     Callback = function()
         getgenv().BloxyHub.Shutdown()
     end
@@ -1479,22 +1700,22 @@ ThreadManager:Register("UIUpdate", function()
         
         local _, worldName = Utils:GetCurrentWorld()
         if WorldInfo then 
-            WorldInfo:SetTitle("Mundo Actual")
+            WorldInfo:SetTitle(Utils:Translate("MundoActual"))
             WorldInfo:SetContent(worldName) 
         end
         
         if StatusLabel then
-            StatusLabel:SetTitle("Estado: " .. Session.Status)
+            StatusLabel:SetTitle(Utils:Translate("EstadoScript") .. ": " .. Session.Status)
             StatusLabel:SetContent(string.format(
-                "FPS: %d | Ping: %dms\nUptime: %s\nHilos Activos: %d",
+                "FPS: %d | Ping: %dms\nUptime: %s\nActive Threads: %d",
                 Session.FPS, Session.Ping, Session.Uptime, ThreadManager:GetStatus()
             ))
         end
         
         if StatsLabel then
-            StatsLabel:SetTitle("Estadísticas de Sesión")
+            StatsLabel:SetTitle(Utils:Translate("SesionStats"))
             StatsLabel:SetContent(string.format(
-                "Niveles Ganados: %d\nBeli Ganado: %d\nFragmentos: %d\nEnemigos Derrotados: %d",
+                "Levels Gained: %d\nBeli Gained: %d\nFragments: %d\nEnemies Defeated: %d",
                 Session.LevelsGained, Session.BeliEarned, Session.FragmentsEarned, Session.MobsKilled
             ))
         end
@@ -1637,8 +1858,8 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
     HumanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
 end)
 
-Utils:Notify("Bloxy Hub", "Blox Fruits Panel cargado con éxito. ¡Buen farm!", 5)
-Session.Status = "Listo para farmear"
+Utils:Notify("Bloxy Hub", Utils:Translate("LoadedSuccess"), 5)
+Session.Status = Utils:Translate("ReadyFarm")
 
 -- Mensaje de consola para depuración profesional
 print([[
