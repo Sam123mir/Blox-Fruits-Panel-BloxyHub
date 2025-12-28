@@ -1,6 +1,6 @@
 --[[
     BLOXY HUB TITANIUM - UI: TAB COMBAT
-    Configuración de combate y PvP
+    Configuración de combate y PvP - CORREGIDO
 ]]
 
 local CombatTab = {}
@@ -68,6 +68,8 @@ function CombatTab:Create(Window, deps)
     
     -- Lista de jugadores para TP
     local playerList = {}
+    local selectedPlayer = nil
+    
     local function updatePlayerList()
         playerList = {}
         for _, p in pairs(Services.Players:GetPlayers()) do
@@ -75,6 +77,7 @@ function CombatTab:Create(Window, deps)
                 table.insert(playerList, p.Name)
             end
         end
+        return playerList
     end
     updatePlayerList()
     
@@ -89,9 +92,16 @@ function CombatTab:Create(Window, deps)
     local PlayerDropdown = TPSection:Dropdown({
         Title = Utils:Translate("SelectPlayer"),
         Values = playerList,
+        AllowNone = true,
         Flag = "TargetPlayer",
         Callback = function(value)
+            selectedPlayer = value
             Config.PvP.TargetPlayer = value
+            
+            -- Notificar selección
+            if value then
+                Utils:Notify("Jugador", "Seleccionado: " .. value, 2)
+            end
         end
     })
     
@@ -102,12 +112,19 @@ function CombatTab:Create(Window, deps)
         Color = Colors.Blue,
         Icon = "navigation",
         Callback = function()
-            if Config.PvP.TargetPlayer then
-                local target = Services.Players:FindFirstChild(Config.PvP.TargetPlayer)
+            local targetName = selectedPlayer or Config.PvP.TargetPlayer
+            
+            if targetName then
+                local target = Services.Players:FindFirstChild(targetName)
                 if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                    Utils:TeleportTo(target.Character.HumanoidRootPart.CFrame)
+                    -- Usar teleport mejorado
+                    Utils:TeleportToLoop(target.Character.HumanoidRootPart.CFrame, 0.5)
                     Utils:Notify("Teleport", "Teletransportado a " .. target.Name, 2)
+                else
+                    Utils:Notify("Error", "Jugador no encontrado o no tiene personaje", 2)
                 end
+            else
+                Utils:Notify("Error", "Selecciona un jugador primero", 2)
             end
         end
     })
@@ -118,9 +135,11 @@ function CombatTab:Create(Window, deps)
         Title = Utils:Translate("RefreshPlayers"),
         Icon = "refresh-cw",
         Callback = function()
-            updatePlayerList()
-            PlayerDropdown:Refresh(playerList)
-            Utils:Notify("Lista", "Lista de jugadores actualizada", 2)
+            local newList = updatePlayerList()
+            if PlayerDropdown and PlayerDropdown.Refresh then
+                PlayerDropdown:Refresh(newList)
+            end
+            Utils:Notify("Lista", "Lista actualizada (" .. #newList .. " jugadores)", 2)
         end
     })
     
@@ -136,7 +155,7 @@ function CombatTab:Create(Window, deps)
     
     CombatSection:Toggle({
         Title = "Fast Attack",
-        Desc = "Ataques más rápidos",
+        Desc = "Ataques más rápidos (activa con Auto Farm)",
         Default = Config.Combat.FastAttack,
         Flag = "FastAttack",
         Callback = function(value)

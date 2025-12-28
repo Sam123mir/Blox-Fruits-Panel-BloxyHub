@@ -1,6 +1,6 @@
 --[[
     BLOXY HUB TITANIUM - UI: TAB STATS
-    Distribución de estadísticas
+    Distribución de estadísticas - CORREGIDO + RESET
 ]]
 
 local StatsTab = {}
@@ -92,7 +92,7 @@ function StatsTab:Create(Window, deps)
     
     ControlSection:Toggle({
         Title = Utils:Translate("AutoStatsLoop"),
-        Desc = "Distribuye puntos automáticamente",
+        Desc = "Distribuye puntos automáticamente cada 5 segundos",
         Default = Config.Stats.Enabled,
         Flag = "AutoStats",
         Callback = function(value)
@@ -108,6 +108,33 @@ function StatsTab:Create(Window, deps)
         Icon = "zap",
         Callback = function()
             StatsManager:DistributePoints(true)
+        end
+    })
+    
+    Tab:Space({ Columns = 2 })
+    
+    -- Sección Reset de Stats
+    local ResetSection = Tab:Section({
+        Title = "🔄 Resetear Estadísticas",
+        Box = true,
+        BoxBorder = true,
+        Opened = true
+    })
+    
+    ResetSection:Section({
+        Title = "Costo: 2500 Fragmentos",
+        TextSize = 12,
+        TextTransparency = 0.4
+    })
+    
+    ResetSection:Space()
+    
+    ResetSection:Button({
+        Title = "💎 Comprar Reset de Stats",
+        Color = Colors.Purple,
+        Icon = "refresh-cw",
+        Callback = function()
+            StatsManager:BuyStatsReset()
         end
     })
     

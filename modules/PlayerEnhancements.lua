@@ -1,10 +1,11 @@
 --[[
     BLOXY HUB TITANIUM - MÓDULO: PLAYER ENHANCEMENTS
-    Mejoras del jugador (Aura, Skyjump, Speed, etc.)
+    Mejoras del jugador - CORREGIDO
 ]]
 
 local PlayerEnhancements = {
-    SkyjumpConnected = false
+    SkyjumpConnected = false,
+    SpeedConnection = nil
 }
 
 -- Dependencias
@@ -20,14 +21,9 @@ function PlayerEnhancements:AutoAura()
     if not Config.Player.AutoAura then return end
     
     pcall(function()
-        local char = Utils:GetCharacter()
-        
-        -- Verificar si ya tiene el efecto de Aura
-        if not char:FindFirstChild("IronBody") then
-            local remotes = Services.ReplicatedStorage:FindFirstChild("Remotes")
-            if remotes and remotes:FindFirstChild("CommF_") then
-                remotes.CommF_:InvokeServer("Buso")
-            end
+        local remotes = Services.ReplicatedStorage:FindFirstChild("Remotes")
+        if remotes and remotes:FindFirstChild("CommF_") then
+            remotes.CommF_:InvokeServer("Buso")
         end
     end)
 end
@@ -45,23 +41,52 @@ function PlayerEnhancements:SetupInfiniteSkyjump()
     end)
     
     self.SkyjumpConnected = true
+    print("[PLAYER] Infinite Skyjump configurado")
 end
 
 function PlayerEnhancements:ApplySpeed()
     local humanoid = Utils:GetHumanoid()
-    if humanoid then
-        if humanoid.WalkSpeed ~= Config.Player.WalkSpeed then 
-            humanoid.WalkSpeed = Config.Player.WalkSpeed 
-        end
-        if humanoid.JumpPower ~= Config.Player.JumpPower then 
-            humanoid.JumpPower = Config.Player.JumpPower 
-        end
+    if not humanoid then return end
+    
+    -- Aplicar WalkSpeed
+    if Config.Player.WalkSpeed and Config.Player.WalkSpeed > 16 then
+        humanoid.WalkSpeed = Config.Player.WalkSpeed
+    end
+    
+    -- Aplicar JumpPower
+    if Config.Player.JumpPower and Config.Player.JumpPower > 50 then
+        humanoid.JumpPower = Config.Player.JumpPower
     end
 end
 
+function PlayerEnhancements:SetupSpeedLoop()
+    -- Usar un loop constante para mantener la velocidad
+    -- porque el juego puede resetearla
+    if self.SpeedConnection then return end
+    
+    self.SpeedConnection = Services.RunService.Heartbeat:Connect(function()
+        if Config.Player.WalkSpeed > 16 or Config.Player.JumpPower > 50 then
+            self:ApplySpeed()
+        end
+    end)
+    
+    print("[PLAYER] Speed loop configurado")
+end
+
 function PlayerEnhancements:Update()
-    self:AutoAura()
-    self:ApplySpeed()
+    -- Auto Aura
+    if Config.Player.AutoAura then
+        self:AutoAura()
+    end
+    
+    -- La velocidad se aplica en el loop de Heartbeat
+end
+
+function PlayerEnhancements:Cleanup()
+    if self.SpeedConnection then
+        self.SpeedConnection:Disconnect()
+        self.SpeedConnection = nil
+    end
 end
 
 return PlayerEnhancements

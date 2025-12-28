@@ -1,6 +1,6 @@
 --[[
     BLOXY HUB TITANIUM - MÓDULO: COMBAT
-    Sistema de combate avanzado
+    Sistema de combate avanzado - CORREGIDO
 ]]
 
 local Combat = {
@@ -25,57 +25,79 @@ function Combat:FastAttack()
     if currentTime - self.LastAttack < self.AttackCooldown then return end
     self.LastAttack = currentTime
     
+    local char = Utils:GetCharacter()
+    if not char then return end
+    
+    -- Método 1: Activar herramienta equipada
     pcall(function()
-        local char = Utils:GetCharacter()
         local tool = char:FindFirstChildOfClass("Tool")
-        
-        -- Método 1: Activación de herramienta local
         if tool then
             tool:Activate()
         end
-        
-        -- Método 2: Disparo de remoto de ataque (Blox Fruits)
+    end)
+    
+    -- Método 2: Click virtual
+    pcall(function()
+        local VirtualUser = Services.VirtualUser
+        VirtualUser:CaptureController()
+        VirtualUser:Button1Down(Vector2.new(0, 0), Services.Workspace.CurrentCamera.CFrame)
+        task.wait(0.01)
+        VirtualUser:Button1Up(Vector2.new(0, 0), Services.Workspace.CurrentCamera.CFrame)
+    end)
+    
+    -- Método 3: Fireclient combat (Blox Fruits específico)
+    pcall(function()
+        local args = {
+            [1] = "SwingSword"
+        }
         local remotes = Services.ReplicatedStorage:FindFirstChild("Remotes")
         if remotes then
-            local combatRemote = remotes:FindFirstChild("Validator")
-            if combatRemote then
-                combatRemote:FireServer("Combat", char)
+            local remote = remotes:FindFirstChild("CommF_")
+            if remote then
+                remote:InvokeServer(unpack(args))
             end
-        end
-        
-        -- Método 3: Simulación de click
-        if Config.Combat.ClickSimulation then
-            Services.VirtualUser:CaptureController()
-            Services.VirtualUser:Button1Down(Vector2.new(0, 0), Services.Workspace.CurrentCamera.CFrame)
         end
     end)
 end
 
 function Combat:AttackEnemy(enemy)
-    if not enemy or not enemy:FindFirstChild("HumanoidRootPart") then return end
+    if not enemy then return end
+    
+    local enemyHRP = enemy:FindFirstChild("HumanoidRootPart")
+    local enemyHum = enemy:FindFirstChild("Humanoid")
+    
+    if not enemyHRP or not enemyHum then return end
+    if enemyHum.Health <= 0 then return end
+    
+    -- Verificar lag
     if Utils:IsLagging() then 
         Session.Status = "Lag detectado - Pausando..."
         return 
     end
     
+    local rootPart = Utils:GetRootPart()
+    if not rootPart then return end
+    
+    local dist = (rootPart.Position - enemyHRP.Position).Magnitude
+    
+    -- Actualizar status
+    Session.Status = "Atacando: " .. enemy.Name .. " (" .. math.floor(dist) .. "m)"
+    
+    -- Teletransportar cerca del enemigo
+    local attackPos = enemyHRP.CFrame * CFrame.new(0, 0, -3)
+    Utils:TeleportTo(attackPos, false)
+    
+    -- Mirar al enemigo
     pcall(function()
-        local char = Utils:GetCharacter()
-        local rootPart = Utils:GetRootPart()
-        if not rootPart then return end
-        
-        local enemyHRP = enemy.HumanoidRootPart
-        local dist = (rootPart.Position - enemyHRP.Position).Magnitude
-        
-        -- Solo teletransportar si estamos lejos
-        if dist > 15 then
-            Utils:TeleportTo(enemyHRP.CFrame * CFrame.new(0, 10, 0), Config.AutoFarm.SafeMode)
-        end
-        
-        -- Ejecutar ataques rápidos
-        self:FastAttack()
-        
-        -- Actualizar estadísticas al morir
-        if enemy.Humanoid.Health <= 0 then
+        rootPart.CFrame = CFrame.lookAt(rootPart.Position, enemyHRP.Position)
+    end)
+    
+    -- Atacar
+    self:FastAttack()
+    
+    -- Verificar si murió
+    task.delay(0.1, function()
+        if enemyHum.Health <= 0 then
             Session:AddMobKill()
         end
     end)
@@ -84,35 +106,37 @@ end
 function Combat:ExecuteMasteryFinisher(enemy)
     if not Config.Mastery.Enabled or not enemy then return end
     
-    pcall(function()
-        local healthPercent = (enemy.Humanoid.Health / enemy.Humanoid.MaxHealth) * 100
+    local enemyHum = enemy:FindFirstChild("Humanoid")
+    if not enemyHum then return end
+    
+    local healthPercent = (enemyHum.Health / enemyHum.MaxHealth) * 100
+    
+    if healthPercent <= Config.Mastery.FinishAtHealth then
+        -- Equipar arma de mastery
+        local weaponName = Config.AIMastery.SelectedWeapon or Config.Mastery.Weapon
+        Utils:Equip(weaponName)
         
-        if healthPercent <= Config.Mastery.FinishAtHealth then
-            local weaponName = Config.Mastery.Weapon
-            local char = Utils:GetCharacter()
-            local humanoid = Utils:GetHumanoid()
-            local weapon = Services.LocalPlayer.Backpack:FindFirstChild(weaponName) or char:FindFirstChild(weaponName)
-            
-            if weapon and humanoid then
-                humanoid:EquipTool(weapon)
-                task.wait(0.1)
-                
-                if Config.Mastery.UseSkills then
-                    Services.VirtualUser:SetKeyDown("z")
-                    task.wait(0.15)
-                    Services.VirtualUser:SetKeyUp("z")
-                end
-            end
+        task.wait(0.1)
+        
+        -- Usar habilidades si está habilitado
+        if Config.Mastery.UseSkills then
+            pcall(function()
+                Services.VirtualUser:SetKeyDown("z")
+                task.wait(0.15)
+                Services.VirtualUser:SetKeyUp("z")
+            end)
         end
-    end)
+    end
 end
 
 function Combat:KillAura()
     if not Config.Combat.KillAura then return end
     
     local enemies = Utils:GetEnemiesInRange(Config.Combat.Range)
+    
     for _, enemy in ipairs(enemies) do
         self:AttackEnemy(enemy)
+        task.wait(0.05)
     end
 end
 

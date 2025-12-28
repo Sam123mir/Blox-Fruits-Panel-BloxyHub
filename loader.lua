@@ -172,6 +172,10 @@ print("[BLOXY HUB] WindUI cargado ✓")
 deps.WindUI = WindUI
 deps.Window = Window
 deps.Colors = UIInit.Colors
+deps.Services = Services -- Importante para Dashboard
+
+-- Configurar speed loop para mantener velocidad/salto
+PlayerEnhancements:SetupSpeedLoop()
 
 -- ═══════════════════════════════════════════════════════════════
 -- CARGA DE TABS
