@@ -1,6 +1,6 @@
 --[[
     ╔══════════════════════════════════════════════════════════════╗
-    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.5               ║
+    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.1               ║
     ║  Arquitectura Modular Profesional | Diseñado por Sammir    ║
     ╚══════════════════════════════════════════════════════════════╝
 --]]
@@ -31,8 +31,6 @@ local function UpdateLoading(text)
     -- Deprecated: Now prints instead of updating UI
     print("[BLOXY HUB] " .. text)
 end
-
-if getgenv().BloxyHub.Active then
 
 if getgenv().BloxyHub.Active then
     warn("[BLOXY HUB] Ya hay una instancia activa. Cerrando instancia anterior...")
@@ -1108,6 +1106,7 @@ end
 
 -- UpdateLoading("Descargando Interfaz...")
 local Fluent = nil
+print("[BLOXY HUB] Intentando cargar Fluent UI...")
 local s, e = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/main.lua"))()
 end)
@@ -1115,41 +1114,48 @@ end)
 if s and e then
     Fluent = e
     getgenv().Fluent = Fluent
+    print("[BLOXY HUB] Fluent UI cargado correctamente.")
 else
-    UpdateLoading("Error al cargar interfaz")
-    warn("[BLOXY HUB] Error cargando Fluent: " .. tostring(e))
-    -- Si falla, intentamos link alternativo
+    print("[BLOXY HUB] Falló carga primaria de Fluent, intentando alternativa...")
     local s2, e2 = pcall(function()
         return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
     end)
     if s2 and e2 then
         Fluent = e2
         getgenv().Fluent = Fluent
+        print("[BLOXY HUB] Fluent UI cargado desde link alternativo.")
     else
-        task.wait(2)
-        pcall(function() LocalPlayer.PlayerGui.BloxyLoading:Destroy() end)
+        warn("[BLOXY HUB] ERROR FATAL: No se pudo cargar Fluent UI. Revisa tu conexión.")
         return
     end
 end
 
--- UpdateLoading("Cargando Guardado...")
+print("[BLOXY HUB] Cargando Addons...")
 local SaveManager, InterfaceManager
 pcall(function()
     SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
     InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 end)
 
--- UpdateLoading("Construyendo Ventana...")
+print("[BLOXY HUB] Creando ventana...")
+local Window
+local successWindow, errorWindow = pcall(function()
+    return Fluent:CreateWindow({
+        Title = "Blox Fruits Panel 🏴‍☠️ | Bloxy Hub",
+        SubTitle = "Titanium v7.4 by Sammir",
+        TabWidth = 160,
+        Size = UDim2.fromOffset(580, 460),
+        Acrylic = false, -- Desactivar acrílico globalmente para evitar fallos en algunos dispositivos
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.RightControl
+    })
+end)
 
-local Window = Fluent:CreateWindow({
-    Title = "Blox Fruits Panel 🏴‍☠️ | Bloxy Hub",
-    SubTitle = "Titanium v7.1 by Sammir",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = not Services.UserInputService.TouchEnabled, -- Desactivar acrílico en móvil para evitar crash
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.RightControl
-})
+if not successWindow then
+    warn("[BLOXY HUB] Error al crear la ventana: " .. tostring(errorWindow))
+    return
+end
+Window = errorWindow -- pcall returns result as second value if successful
 
 -- ═══════════════════════════════════════════════════════════════
 -- PESTAÑAS DE LA UI
