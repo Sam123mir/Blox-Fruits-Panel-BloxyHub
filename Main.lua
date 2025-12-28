@@ -1,6 +1,6 @@
 --[[
     ╔══════════════════════════════════════════════════════════════╗
-    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.1               ║
+    ║  BLOX FRUITS PANEL | BLOXY HUB TITANIUM V7.0               ║
     ║  Arquitectura Modular Profesional | Diseñado por Sammir    ║
     ╚══════════════════════════════════════════════════════════════╝
 --]]
@@ -10,9 +10,19 @@
 -- ═══════════════════════════════════════════════════════════════
 
 getgenv().BloxyHub = getgenv().BloxyHub or {}
-local VERSION = "6.0.0"
+local VERSION = "7.5.0 Professional"
 -- Reemplaza este link con tu link RAW de GitHub (donde esté tu versión escrita)
 local GITHUB_RAW = "https://raw.githubusercontent.com/Sam123mir/BloxyHub/refs/heads/main/version.txt"
+
+-- ═══════════════════════════════════════════════════════════════
+-- VALIDACIÓN DE JUEGO (BLOXY ELITE)
+-- ═══════════════════════════════════════════════════════════════
+
+local VALID_PLACE_IDS = {2753915549, 4442272183, 7449423635}
+if not table.find(VALID_PLACE_IDS, game.PlaceId) then
+    game:GetService("Players").LocalPlayer:Kick("⚠️ BLOXY HUB: Este script solo es compatible con Blox Fruits.")
+    return
+end
 
 -- ═══════════════════════════════════════════════════════════════
 -- FEEDBACK INICIAL (MÓVIL / PC)
@@ -54,21 +64,22 @@ local ThreadManager = {
 function ThreadManager:Register(name, func)
     if not self.Active then return end
     
+    -- Limpieza de thread existente para evitar duplicados (Race Condition Fix)
+    if self.Threads[name] then
+        print("[BLOXY HUB] Reiniciando thread: " .. name)
+        self:Stop(name)
+        task.wait(0.1)
+    end
+    
     local thread = task.spawn(function()
-        local success, err = pcall(function()
-            while self.Active and self.Threads[name] do
-                local s, e = pcall(func)
-                if not s then
-                    local errorMsg = string.format("[THREAD ERROR: %s] %s", name, tostring(e))
-                    warn(errorMsg)
-                    if LogSystem then LogSystem:Add(tostring(e), "FATAL:"..name) end
-                end
-                task.wait()
+        while self.Active and self.Threads[name] do
+            local success, err = pcall(func)
+            if not success then
+                local errorMsg = string.format("[THREAD ERROR: %s] %s", name, tostring(err))
+                warn(errorMsg)
+                if LogSystem then LogSystem:Add(tostring(err), "THREAD:"..name) end
             end
-        end)
-        
-        if not success then
-            warn(string.format("[THREAD FATAL: %s] %s", name, tostring(err)))
+            task.wait(0.1) -- Delay base de salud del sistema
         end
     end)
     
@@ -122,10 +133,24 @@ local Services = {
 }
 
 local LocalPlayer = Services.Players.LocalPlayer
-local Character = LocalPlayer.Character
-local Humanoid, HumanoidRootPart
+local Character, Humanoid, HumanoidRootPart
 
--- Función para asegurar que las referencias del personaje estén actualizadas
+-- ✅ REFERENCIAS SEGURAS (Getters profesionales)
+local function GetCharacter()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local function GetHumanoid()
+    local char = GetCharacter()
+    return char and char:FindFirstChildOfClass("Humanoid")
+end
+
+local function GetRootPart()
+    local char = GetCharacter()
+    return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+-- Actualización automática de referencias
 local function UpdateCharacterReferences(newChar)
     Character = newChar or LocalPlayer.Character
     if Character then
@@ -134,12 +159,9 @@ local function UpdateCharacterReferences(newChar)
     end
 end
 
--- UpdateLoading("Personaje...")
+UpdateLoading("Personaje...")
 task.spawn(function()
-    if not Character then 
-        Character = LocalPlayer.CharacterAdded:Wait()
-    end
-    UpdateCharacterReferences(Character)
+    UpdateCharacterReferences(GetCharacter())
 end)
 
 LocalPlayer.CharacterAdded:Connect(UpdateCharacterReferences)
@@ -566,14 +588,49 @@ end)
 
 local Utils = {}
 
+-- ✅ CACHÉ ESPACIAL (Optimización de CPU)
+local EnemyCache = {
+    LastUpdate = 0,
+    CacheTime = 0.5,
+    Enemies = {}
+}
+
 function Utils:GetClosestEnemy(maxDistance)
     maxDistance = maxDistance or 500
+    local rootPart = GetRootPart()
+    if not rootPart then return nil, math.huge end
+    
+    local currentTime = tick()
+    
+    -- Usar caché si es reciente
+    if currentTime - EnemyCache.LastUpdate < EnemyCache.CacheTime then
+        local closest = nil
+        local closestDist = maxDistance
+        
+        for _, enemy in pairs(EnemyCache.Enemies) do
+            if enemy and enemy.Parent and enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
+                local dist = (rootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+                if dist < closestDist and enemy.Humanoid.Health > 0 then
+                    closest = enemy
+                    closestDist = dist
+                end
+            end
+        end
+        return closest, closestDist
+    end
+    
+    -- Actualizar caché si expiró
+    EnemyCache.Enemies = {}
     local closest = nil
     local closestDist = maxDistance
     
-    for _, enemy in pairs(Services.Workspace.Enemies:GetChildren()) do
+    local folder = Services.Workspace:FindFirstChild("Enemies")
+    if not folder then return nil, math.huge end
+    
+    for _, enemy in pairs(folder:GetChildren()) do
         if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
-            local dist = (HumanoidRootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+            table.insert(EnemyCache.Enemies, enemy)
+            local dist = (rootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
             if dist < closestDist then
                 closest = enemy
                 closestDist = dist
@@ -581,32 +638,49 @@ function Utils:GetClosestEnemy(maxDistance)
         end
     end
     
+    EnemyCache.LastUpdate = currentTime
     return closest, closestDist
 end
 
 function Utils:GetEnemiesInRange(range)
-    local enemies = {}
-    for _, enemy in pairs(Services.Workspace.Enemies:GetChildren()) do
-        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
-            local dist = (HumanoidRootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
-            if dist <= range then
-                table.insert(enemies, enemy)
+    local rootPart = GetRootPart()
+    if not rootPart then return {} end
+    
+    local inRange = {}
+    -- Reutilizamos la lógica de caché de GetClosestEnemy enviando un update si es necesario
+    self:GetClosestEnemy(range) 
+    
+    for _, enemy in pairs(EnemyCache.Enemies) do
+        if enemy and enemy.Parent and enemy:FindFirstChild("HumanoidRootPart") then
+            local dist = (rootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+            if dist <= range and enemy.Humanoid.Health > 0 then
+                table.insert(inRange, enemy)
             end
         end
     end
-    return enemies
+    return inRange
 end
 
 function Utils:TeleportTo(cframe, safeMode)
-    if not HumanoidRootPart then return end
-    
-    if safeMode then
-        -- Teletransporte seguro con offset Y
-        local targetCFrame = cframe * CFrame.new(0, Config.AutoFarm.Distance, 0)
-        HumanoidRootPart.CFrame = targetCFrame
-    else
-        HumanoidRootPart.CFrame = cframe
+    local rootPart = GetRootPart()
+    if not rootPart then 
+        if LogSystem then LogSystem:Add("TP Fallido: Root desapareció", "WARN") end
+        return false 
     end
+    
+    local success = pcall(function()
+        if safeMode then
+            local targetCFrame = cframe * CFrame.new(0, Config.AutoFarm.Distance, 0)
+            rootPart.CFrame = targetCFrame
+        else
+            rootPart.CFrame = cframe
+        end
+    end)
+    
+    if not success and LogSystem then
+        LogSystem:Add("Error en teletransporte", "ERROR")
+    end
+    return success
 end
 
 function Utils:GetEnemyByName(name)
@@ -758,20 +832,36 @@ end
 -- MÓDULO: COMBAT SYSTEM (Sistema de Combate Avanzado)
 -- ═══════════════════════════════════════════════════════════════
 
-local Combat = {}
+-- ✅ MÓDULO: COMBAT SYSTEM (Profesional & Anti-Detección)
+local Combat = {
+    LastAttack = 0,
+    AttackCooldown = 0.05 -- Ajuste sugerido para balancear velocidad y riesgo
+}
 
 function Combat:FastAttack()
     if not Config.Combat.FastAttack then return end
     
+    local currentTime = tick()
+    if currentTime - self.LastAttack < self.AttackCooldown then return end
+    self.LastAttack = currentTime
+    
     pcall(function()
-        local combat = Services.ReplicatedStorage.Remotes:FindFirstChild("Validator")
-        local commF = Services.ReplicatedStorage.Remotes.CommF_
+        local char = GetCharacter()
+        local tool = char:FindFirstChildOfClass("Tool")
         
-        if combat then
-            combat:FireServer("Combat", Character)
+        -- Método Seguro 1: Activación de herramienta local
+        if tool then
+            tool:Activate()
         end
         
-        if commF and Config.Combat.ClickSimulation then
+        -- Método Seguro 2: Disparo de remoto de ataque (Blox Fruits)
+        local combatRemote = Services.ReplicatedStorage.Remotes:FindFirstChild("Validator")
+        if combatRemote then
+            combatRemote:FireServer("Combat", char)
+        end
+        
+        -- Simulación de click para asegurar registro
+        if Config.Combat.ClickSimulation then
             Services.VirtualUser:CaptureController()
             Services.VirtualUser:Button1Down(Vector2.new(0, 0), Services.Workspace.CurrentCamera.CFrame)
         end
@@ -890,19 +980,41 @@ function Farming:CheckQuest()
     return false
 end
 
+-- ✅ SISTEMA DE QUESTS CON CACHÉ Y RETRY
+local QuestCache = {
+    LastUpdate = 0,
+    UpdateInterval = 5,
+    ActiveQuest = nil
+}
+
 function Farming:TakeQuest()
-    if self:CheckQuest() then return end
+    local currentTime = tick()
+    
+    -- Si ya hay quest activa, no hacer nada
+    if self:CheckQuest() then return true end
+    
+    -- Evitar spam de peticiones al servidor
+    if currentTime - QuestCache.LastUpdate < QuestCache.UpdateInterval then
+        return false
+    end
     
     local best = self:GetBestQuest()
-    if not best then return end
+    if not best then 
+        if LogSystem then LogSystem:Add("Sin quest para nivel " .. LocalPlayer.Data.Level.Value, "WARN") end
+        return false 
+    end
     
-    Session.Status = "Viajando a NPC: " .. best.NPC
-    Utils:TeleportTo(best.CFrame)
+    QuestCache.LastUpdate = currentTime
+    Session.Status = "Obteniendo Quest: " .. best.Quest
     
-    -- Interactuar con NPC (Simplificado por Remoto si es posible o Click)
-    pcall(function()
+    -- Intento de toma con validación de distancia
+    local success = pcall(function()
+        Utils:TeleportTo(best.CFrame)
+        task.wait(0.3)
         Services.ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", best.Quest, 1)
     end)
+    
+    return success
 end
 
 function Farming:AutoLevel()
@@ -914,7 +1026,7 @@ function Farming:AutoLevel()
     end
     
     local best = self:GetBestQuest()
-    local enemy = Utils:GetEnemyByName(best.Enemy) or Utils:GetClosestEnemy(1000)
+    local enemy = Utils:GetEnemyByName(best.Enemy) or Utils:GetClosestEnemy(1500)
     
     if enemy then
         Utils:Equip("Melee")
@@ -924,7 +1036,7 @@ function Farming:AutoLevel()
             Combat:ExecuteMasteryFinisher(enemy)
         end
     else
-        Session.Status = "Esperando respawn de " .. best.Enemy
+        Session.Status = "Esperando respawn de " .. (best.Enemy or "Objetivo")
     end
 end
 
@@ -1030,43 +1142,56 @@ function Performance:ApplyFPSBoost()
     end
 end
 
--- ═══════════════════════════════════════════════════════════════
--- MÓDULO: SECURITY SYSTEM
--- ═══════════════════════════════════════════════════════════════
-
-local Security = {}
-
-function Security:AntiAFK()
-    if not Config.Security.AntiAFK then return end
-    
-    Services.VirtualUser:CaptureController()
-    Services.VirtualUser:ClickButton2(Vector2.new())
-end
+-- ✅ MÓDULO: SECURITY SYSTEM (Elite)
+local Security = {
+    AdminHistory = {}
+}
 
 function Security:DetectAdmin()
-    if not Config.Security.AdminDetector then return end
+    if not Config.Security.AdminDetector then return false end
     
     for _, player in pairs(Services.Players:GetPlayers()) do
         if player ~= LocalPlayer then
+            -- Evitar chequeos redundantes
+            if self.AdminHistory[player.UserId] then
+                if self.AdminHistory[player.UserId].IsAdmin then return true end
+                continue
+            end
+            
             local success, rank = pcall(function()
                 return player:GetRankInGroup(Config.Security.StaffGroupId)
             end)
             
-            if success and rank and rank >= 1 then
-                Utils:Notify("⚠️ ALERTA", string.format("Admin detectado: %s", player.Name), 5)
+            if success then
+                local isAdmin = rank and rank >= 1
+                self.AdminHistory[player.UserId] = {
+                    IsAdmin = isAdmin,
+                    LastChecked = os.time()
+                }
                 
-                if Config.Security.AutoLeaveOnAdmin then
-                    task.wait(1)
-                    LocalPlayer:Kick(string.format("🛡️ BLOXY ELITE: Admin detectado (%s). Desconexión segura.", player.Name))
+                if isAdmin then
+                    local msg = string.format("Admin Detectado: %s (Rank: %d)", player.Name, rank)
+                    Utils:Notify("⚠️ ALERTA", msg, 5)
+                    if LogSystem then LogSystem:Add(msg, "SECURITY") end
+                    
+                    if Config.Security.AutoLeaveOnAdmin then
+                        task.wait(2)
+                        LocalPlayer:Kick("🛡️ BLOXY HUB: Admin detectado. Servidor cerrado por seguridad.")
+                    end
+                    return true
                 end
-                
-                return true
             end
         end
     end
-    
     return false
 end
+
+-- Limpieza de caché cada 10 min
+task.spawn(function()
+    while task.wait(600) do
+        Security.AdminHistory = {}
+    end
+end)
 
 -- // MÓDULO: MEJORAS DEL JUGADOR
 local PlayerExp = {}
@@ -1651,17 +1776,29 @@ end)
 
 -- Loop: Seguridad y Admin Detector
 ThreadManager:Register("SecurityManager", function()
-    Security:AntiAFK()
+    -- Anti-AFK
+    pcall(function()
+        Services.VirtualUser:CaptureController()
+        Services.VirtualUser:ClickButton2(Vector2.new())
+    end)
+    
     if Config.Security.AdminDetector then
         Security:DetectAdmin()
     end
+    -- Auto-Save de Config (Cada 5 min aproximado por thread loop)
+    pcall(function()
+        if SaveManager and tick() % 300 < 1 then
+            SaveManager:Save()
+        end
+    end)
     -- Mantenimiento del jugador
     if Config.Player.AutoAura then
         PlayerExp:AutoAura()
     end
-    if Humanoid then
-        if Humanoid.WalkSpeed ~= Config.Player.WalkSpeed then Humanoid.WalkSpeed = Config.Player.WalkSpeed end
-        if Humanoid.JumpPower ~= Config.Player.JumpPower then Humanoid.JumpPower = Config.Player.JumpPower end
+    local hum = GetHumanoid()
+    if hum then
+        if hum.WalkSpeed ~= Config.Player.WalkSpeed then hum.WalkSpeed = Config.Player.WalkSpeed end
+        if hum.JumpPower ~= Config.Player.JumpPower then hum.JumpPower = Config.Player.JumpPower end
     end
     task.wait(2)
 end)
@@ -1841,5 +1978,5 @@ print([[
     |  _ \| |   | |  | | \  /   \ V /   | |__| | |  | |  _ \ 
     | |_) | |___| |__| | /  \    | |    |  __  | |  | | |_) |
     |____/|_____|\____/ /_/\_\   |_|    |_|  |_|\____/|____/ 
-    BLOX FRUITS PANEL - BLOXY HUB TITANIUM V7.0
+    BLOX FRUITS PANEL - BLOXY HUB TITANIUM V7.5 PROFESSIONAL
 ]])
